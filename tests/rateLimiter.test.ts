@@ -91,7 +91,7 @@ describe("rateLimitResponse", () => {
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("45");
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:5173");
-    const body = await res.json();
+    const body: any = await res.json();
     expect(body.error).toBe("Rate limit exceeded");
   });
 });

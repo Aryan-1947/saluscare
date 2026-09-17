@@ -7,6 +7,16 @@ const MODELS = {
   webSearch: "groq/compound-mini",
 };
 
+// Graceful degradation: gpt-oss is a reasoning model and can return an empty
+// note even after a retry (budget exhausted by reasoning tokens, transient// outage). The structured guidance card above the note is complete on its own,
+// so a static, safe closing note is strictly better than showing nothing.
+const FALLBACK_CLOSING_NOTE =
+  "Your assessment is ready above. If your symptoms worsen, new symptoms appear, or you are unsure at any point, please seek professional care. This is informational, not a replacement for professional care.";
+
+function fallbackClosingNote(): string {
+  return FALLBACK_CLOSING_NOTE;
+}
+
 const INTAKE_SYSTEM_PROMPT = `You are a senior triage physician assistant. Extract structured symptom information from the user's description, and simultaneously decide if you have enough information to safely assess it. Do not diagnose. Do not suggest treatment.
 
 Severity inference: infer severity from context even if the patient doesn't use the words "mild/moderate/severe" directly. If they describe no pain, no breathing difficulty, no high fever, and nothing alarming, classify as "mild". If they describe significant pain, persistent symptoms, or multiple compounding symptoms, classify as "moderate". If they describe intense pain, inability to function, or anything approaching emergency language (without being an outright red flag), classify as "severe". Only use "unknown" if there is truly no information to infer from at all.
@@ -116,7 +126,7 @@ export async function runExplainerAgent(
   if (!note) {
     note = await callOnce(); // one retry on empty completion
   }
-  return note;
+  return note || fallbackClosingNote();
 }
 
 
@@ -155,7 +165,8 @@ export async function runFollowupAgent(
     reasoning_effort: "low",
   });
 
-  return completion.choices[0]?.message?.content ?? "";
+  const note = completion.choices[0]?.message?.content ?? "";
+  return note.trim() || fallbackClosingNote();
 }
 
 
@@ -268,5 +279,5 @@ export async function runGeneralQuestionAgent(
   if (!answer) {
     answer = await callOnce(); // one retry on empty completion
   }
-  return answer || "I don't have a specific answer for that right now — it may be worth asking your doctor directly. This is informational, not a replacement for professional care.";
+  return answer || "I can't answer that right now due to a temporary service issue — please try again in a moment. This is informational, not a replacement for professional care.";
 }

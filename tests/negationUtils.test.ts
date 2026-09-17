@@ -43,13 +43,13 @@ describe("windowHasNegation", () => {
   it("detects a negation in the window before the keyword", () => {
     const text = "the patient reports no chest pain";
     const idx = text.indexOf("chest pain");
-    expect(windowHasNegation(text, idx, "chest pain".length)).toBe(true);
+    expect(windowHasNegation(text, idx)).toBe(true);
   });
 
   it("returns false when no negation precedes the keyword", () => {
     const text = "the patient reports severe chest pain";
     const idx = text.indexOf("chest pain");
-    expect(windowHasNegation(text, idx, "chest pain".length)).toBe(false);
+    expect(windowHasNegation(text, idx)).toBe(false);
   });
 
   it("matches the isNegated window exactly (pure leading window)", () => {
