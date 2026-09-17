@@ -25,8 +25,8 @@ async function callFunction<T>(
   });
 
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(errorBody.error || `Request failed with status ${res.status}`);
+    const errorBody = await res.json().catch(() => null);
+    throw new Error(errorBody?.error || `Request failed with status ${res.status}`);
   }
 
   return res.json();
