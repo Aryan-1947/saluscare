@@ -32,6 +32,11 @@ alter table public.chat_turns
 alter table public.session_history
   add column if not exists auth0_user_id text;
 
+-- Durable image storage path (urls are re-signed on read). Must exist before
+-- the partial index on it is created below.
+alter table public.chat_turns
+  add column if not exists image_path text;
+
 -- ---------------------------------------------------------------------------
 -- 2. Backfill ownership from sessions (runs once, no-op if re-run)
 -- ---------------------------------------------------------------------------
@@ -76,13 +81,7 @@ create index if not exists idx_chat_turns_image_path
   where image_path is not null;
 
 -- ---------------------------------------------------------------------------
--- 4. Durable image storage path
--- ---------------------------------------------------------------------------
-alter table public.chat_turns
-  add column if not exists image_path text;
-
--- ---------------------------------------------------------------------------
--- 5. RLS: defense-in-depth. Edge functions use the service role (bypasses
+-- 4. RLS: defense-in-depth. Edge functions use the service role (bypasses
 -- RLS) and enforce scoping in code; RLS guarantees that even a future client
 -- side access path cannot leak cross-user rows. No anon/authenticated policies
 -- are created, so direct client access is fully denied.
