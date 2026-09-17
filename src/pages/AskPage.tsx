@@ -4,6 +4,7 @@ import { Send, ImagePlus, X, Loader2, RotateCcw, MessageSquareText } from "lucid
 import { useAuth0 } from "@auth0/auth0-react";
 import { logRootSession } from "@/lib/sessionLog";
 import { useApi } from "@/hooks/useApi";
+import { prepareImageForUpload } from "@/lib/api";
 import { ResultCard } from "@/components/ask/ResultCard";
 import { EcgMonitor } from "@/components/ask/EcgMonitor";
 import type { AssessmentResult, ImageClarificationResult, TextClarificationResult, GeneralAnswerResult } from "@/types/api";
@@ -119,8 +120,10 @@ export function AskPage() {
           ...prev,
           { role: "user", kind: "image", content: submittedImagePreview!, caption: submittedText || undefined },
         ]);
-        const base64 = submittedImagePreview!.split(",")[1];
-        const res = await sendImage(base64, imageFile.type, submittedText || undefined, sessionId);
+        // Downscale + re-encode client-side so a 12 MB phone photo doesn't
+        // blow past the edge function request body limit.
+        const { base64, mimeType } = await prepareImageForUpload(imageFile);
+        const res = await sendImage(base64, mimeType, submittedText || undefined, sessionId);
         clearImage();
         if (isImageClarification(res)) {
           setTurns((prev) => [...prev, { role: "assistant", kind: "question", content: res.clarifyingQuestion }]);

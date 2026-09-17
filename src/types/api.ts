@@ -77,3 +77,28 @@ export type GeneralAnswerResult = {
   isGeneralAnswer: true;
   answer: string;
 };
+
+export type HistoryTurn = {
+  role: "user" | "assistant";
+  kind: "text" | "image" | "question" | "answer" | "result";
+  content: string | null;
+  imageUrl: string | null;
+  result: unknown;
+  createdAt?: string;
+};
+
+export type FollowupSummary = {
+  sessionId: string;
+  complaintText: string | null;
+  tier: number;
+  createdAt: string;
+};
+
+export type FollowupsResponse = {
+  followups: FollowupSummary[];
+};
+
+export type HistoryResponse = {
+  groupId: string;
+  turns: HistoryTurn[];
+};

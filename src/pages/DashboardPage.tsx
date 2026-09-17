@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -12,6 +13,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getLoggedSessions } from "@/lib/sessionLog";
+import { useApi } from "@/hooks/useApi";
+import type { FollowupSummary } from "@/types/api";
 
 const actionCards = [
   {
@@ -42,19 +45,36 @@ const actionCards = [
     to: "/sessions",
     accent: "#64748B",
   },
-];
-
-export function DashboardPage() {
+];export function DashboardPage() {
   const { user } = useAuth0();
+  const { getFollowups } = useApi();
   const navigate = useNavigate();
+
+  const [openFollowups, setOpenFollowups] = useState<FollowupSummary[]>([]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  // Live metrics derived from locally-logged sessions (React Compiler memoizes
-  // automatically — no manual useMemo needed here).
+  // Locally-logged sessions drive the total/last-assessment metrics (React
+  // Compiler memoizes automatically — no manual useMemo needed here).
   const sessions = user?.sub ? getLoggedSessions(user.sub) : [];
   const recent = sessions[0]; // stored most-recent-first
+
+  // Active Follow-ups comes from the backend: sessions still awaiting a
+  // follow-up, per the verified user — not a localStorage guess.
+  useEffect(() => {
+    let cancelled = false;
+    getFollowups()
+      .then((res) => {
+        if (!cancelled) setOpenFollowups(res.followups ?? []);
+      })
+      .catch(() => {
+        // Metric silently degrades to 0; the dashboard stays usable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [getFollowups]);
 
   const total = sessions.length;
   const lastLabel = recent
@@ -63,15 +83,35 @@ export function DashboardPage() {
 
   const metrics = [
     { icon: Activity, label: "Total Assessments", value: total > 0 ? String(total) : "0" },
-    { icon: Clock, label: "Active Follow-ups", value: total > 0 ? "Open" : "None" },
+    {
+      icon: Clock,
+      label: "Active Follow-ups",
+      value: String(openFollowups.length),
+    },
     { icon: CalendarCheck, label: "Last Consultation", value: lastLabel },
   ];
 
-  const hasRecentSession = Boolean(recent);
-  const recentSessionId = recent?.sessionId ?? "";
-  const recentSessionDate = recent
-    ? new Date(recent.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-    : "";
+  // "Continue where you left off": prefer an assessment that's actually still
+  // open (a follow-up waiting on the user), else the most recent one.
+  const continueTarget = openFollowups[0]
+    ? {
+        sessionId: openFollowups[0].sessionId,
+        label: "Follow-up waiting",
+        dateLabel: new Date(openFollowups[0].createdAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+      }
+    : recent
+      ? {
+          sessionId: recent.sessionId,
+          label: "Last assessment",
+          dateLabel: new Date(recent.startedAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          }),
+        }
+      : null;
 
   return (
     <div className="px-4 md:px-10 py-6 md:py-8 max-w-6xl">
@@ -108,12 +148,12 @@ export function DashboardPage() {
       </div>
 
       {/* Recent session shortcut */}
-      {hasRecentSession && (
+      {continueTarget && (
         <motion.button
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.25 }}
-          onClick={() => navigate(`/sessions/${recentSessionId}`)}
+          onClick={() => navigate(`/sessions/${continueTarget.sessionId}`)}
           className="mt-4 w-full rounded-[12px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-4 flex items-center justify-between text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] transition-shadow group"
         >
           <div className="flex items-center gap-3">
@@ -123,7 +163,7 @@ export function DashboardPage() {
             <div>
               <p className="text-xs text-[#64748B] dark:text-neutral-400">Continue where you left off</p>
               <p className="text-sm font-medium text-[#0F172A] dark:text-white">
-                Last assessment · {recentSessionDate}
+                {continueTarget.label} · {continueTarget.dateLabel}
               </p>
             </div>
           </div>

@@ -86,15 +86,24 @@ export function SessionsPage() {
 
     const fetchOne = async (s: { sessionId: string; startedAt: string }) => {
       try {
-        const history = (await getHistory(s.sessionId)) as {
-          sessions: { id: string; user_input_text: string; tier: number; created_at: string }[];
-        };
-        const latest = history.sessions[history.sessions.length - 1];
+        // New response shape: { groupId, turns } — user/assistant chat turns.
+        const history = await getHistory(s.sessionId);
+        const turns = history.turns ?? [];
+        if (turns.length === 0) return;
+
+        const reversed = [...turns].reverse();
+        const lastUserText = reversed.find((t) => t.role === "user" && t.kind === "text" && t.content)?.content ?? null;
+        const lastResult = reversed.find((t) => t.kind === "result");
+        const lastResultPayload = (lastResult?.result ?? null) as { tier?: number } | null;
+        const lastTimestamp = reversed.find((t) => t.createdAt)?.createdAt;
+
         upsert({
+          // Keep the logged root session id as the navigation target — the
+          // detail page resolves the whole conversation from it.
           sessionId: s.sessionId,
-          complaintText: latest?.user_input_text ?? "Assessment",
-          tier: latest?.tier ?? 1,
-          createdAt: latest?.created_at ?? s.startedAt,
+          complaintText: lastUserText ?? "Assessment",
+          tier: lastResultPayload?.tier ?? 1,
+          createdAt: lastTimestamp ?? s.startedAt,
         });
       } catch {
         // Skip sessions that fail to load — don't block the rest of the list

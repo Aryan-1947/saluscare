@@ -1,7 +1,13 @@
 import { useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { api } from "@/lib/api";
-import type { AssessmentResult, ImageClarificationResult, GeneralAnswerResult } from "@/types/api";
+import type {
+  AssessmentResult,
+  ImageClarificationResult,
+  GeneralAnswerResult,
+  HistoryResponse,
+  FollowupsResponse,
+} from "@/types/api";
 
 export function useApi() {
   const { getAccessTokenSilently } = useAuth0();
@@ -35,6 +41,14 @@ export function useApi() {
     [getAccessTokenSilently]
   );
 
+  const getHistory = useCallback(
+    async (sessionId: string): Promise<HistoryResponse> => {
+      const token = await getAccessTokenSilently();
+      return api.sessionHistory(token, sessionId);
+    },
+    [getAccessTokenSilently]
+  );
+
   const sendFollowup = useCallback(
     async (
       text: string,
@@ -49,13 +63,15 @@ export function useApi() {
     [getAccessTokenSilently]
   );
 
-  const getHistory = useCallback(
-    async (sessionId: string) => {
+
+
+  const getFollowups = useCallback(
+    async (limit?: number): Promise<FollowupsResponse> => {
       const token = await getAccessTokenSilently();
-      return api.sessionHistory(token, sessionId);
+      return api.sessionFollowups(token, limit);
     },
     [getAccessTokenSilently]
   );
 
-  return { startSession, sendMessage, sendImage, sendFollowup, getHistory };
+  return { startSession, sendMessage, sendImage, sendFollowup, getHistory, getFollowups };
 }

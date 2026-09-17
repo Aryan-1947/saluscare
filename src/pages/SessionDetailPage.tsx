@@ -5,21 +5,14 @@ import { Send, Loader2, ArrowLeft } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { ResultCard } from "@/components/ask/ResultCard";
 import { EcgMonitor } from "@/components/ask/EcgMonitor";
-import type { AssessmentResult, GeneralAnswerResult, Tier } from "@/types/api";
-
-type DbSession = {
-  id: string;
-  user_input_text: string;
-  tier: Tier;
-  confidence: number;
-  final_response: AssessmentResult["response"];
-  created_at: string;
-};
+import type { AssessmentResult, GeneralAnswerResult, HistoryTurn, Tier } from "@/types/api";
 
 type Turn =
   | { role: "user"; kind: "text"; content: string }
-  | { role: "assistant"; kind: "result"; content: AssessmentResult }
-  | { role: "assistant"; kind: "answer"; content: string };
+  | { role: "user"; kind: "image"; content: string; caption?: string }
+  | { role: "assistant"; kind: "question"; content: string }
+  | { role: "assistant"; kind: "answer"; content: string }
+  | { role: "assistant"; kind: "result"; content: AssessmentResult };
 
 function isGeneralAnswer(
   result: AssessmentResult | GeneralAnswerResult
@@ -50,20 +43,53 @@ export function SessionDetailPage() {
   useEffect(() => {
     if (!sessionId) return;
     getHistory(sessionId)
-      .then((res) => {
-        const history = res as { sessions: DbSession[] };
+      .then((history) => {
+        // Backend returns { groupId, turns } where each turn already mirrors
+        // the live chat structure (user text/image, assistant question/answer/result).
+        const historyTurns: HistoryTurn[] = history.turns ?? [];
         const built: Turn[] = [];
-        history.sessions.forEach((s) => {
-          built.push({ role: "user", kind: "text", content: s.user_input_text });
-          built.push({
-            role: "assistant",
-            kind: "result",
-            content: { sessionId: s.id, tier: s.tier, triage: null, response: s.final_response },
-          });
-        });
+
+        for (const t of historyTurns) {
+          if (t.role === "user") {
+            if (t.kind === "image" && t.imageUrl) {
+              built.push({ role: "user", kind: "image", content: t.imageUrl, caption: t.content ?? undefined });
+            } else if (t.kind === "text" && t.content) {
+              built.push({ role: "user", kind: "text", content: t.content });
+            }
+            continue;
+          }
+
+          if (t.kind === "question" && t.content) {
+            built.push({ role: "assistant", kind: "question", content: t.content });
+          } else if (t.kind === "answer" && t.content) {
+            built.push({ role: "assistant", kind: "answer", content: t.content });
+          } else if (t.kind === "result") {
+            const payload = t.result as
+              | { sessionId?: string; tier?: Tier; response?: AssessmentResult["response"] }
+              | null;
+            if (payload?.response) {
+              built.push({
+                role: "assistant",
+                kind: "result",
+                content: {
+                  sessionId: payload.sessionId ?? sessionId,
+                  tier: (payload.tier ?? 1) as Tier,
+                  triage: null,
+                  response: payload.response,
+                },
+              });
+            }
+          }
+        }
+
         setTurns(built);
-        if (history.sessions.length > 0) {
-          setLatestSessionId(history.sessions[history.sessions.length - 1].id);
+
+        // Resume the conversation from the newest assessment in the chain.
+        const resultTurns = built.filter(
+          (t): t is Extract<Turn, { kind: "result" }> => t.kind === "result"
+        );
+        if (resultTurns.length > 0) {
+          setLatestSessionId(resultTurns[resultTurns.length - 1].content.sessionId);
         }
       })
       .catch(() => setError("Could not load this session."))
@@ -127,10 +153,29 @@ export function SessionDetailPage() {
 
             <div className="flex flex-col gap-3">
               {turns.map((turn, i) => {
+                if (turn.role === "user" && turn.kind === "image") {
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
+                      <div className="max-w-[80%] rounded-[14px] rounded-br-[4px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-3 py-3 text-sm flex flex-col gap-2">
+                        <img src={turn.content} alt="Submitted symptom" className="rounded-[8px] max-h-40 object-cover" />
+                        {turn.caption && <span>{turn.caption}</span>}
+                      </div>
+                    </motion.div>
+                  );
+                }
                 if (turn.role === "user") {
                   return (
                     <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
                       <div className="max-w-[80%] rounded-[14px] rounded-br-[4px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-4 py-2.5 text-sm">
+                        {turn.content}
+                      </div>
+                    </motion.div>
+                  );
+                }
+                if (turn.kind === "question") {
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                      <div className="max-w-[80%] rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] text-[#0F172A] dark:text-white px-4 py-2.5 text-sm">
                         {turn.content}
                       </div>
                     </motion.div>

@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Code-split: each route loads its own chunk on demand
 const LandingPage = lazy(() => import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -20,6 +21,12 @@ function PageLoader() {
       <Loader2 size={22} className="animate-spin" />
     </div>
   );
+}
+
+// Wraps a lazy route so a failed chunk load shows a recoverable "new version
+// available — reload" fallback instead of an infinite spinner.
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }
 
 function NotFoundPage() {
@@ -63,52 +70,62 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route
-          path="/login"
-          element={
-            <PublicOnly>
-              <LoginPage />
-            </PublicOnly>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <Protected>
-              <DashboardPage />
-            </Protected>
-          }
-        />
-        <Route
-          path="/ask"
-          element={
-            <Protected>
-              <AskPage />
-            </Protected>
-          }
-        />
-        <Route
-          path="/sessions"
-          element={
-            <Protected>
-              <SessionsPage />
-            </Protected>
-          }
-        />
-        <Route
-          path="/sessions/:sessionId"
-          element={
-            <Protected>
-              <SessionDetailPage />
-            </Protected>
-          }
-        />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/login"
+            element={
+              <PublicOnly>
+                <LoginPage />
+              </PublicOnly>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <Protected>
+                <LazyPage>
+                  <DashboardPage />
+                </LazyPage>
+              </Protected>
+            }
+          />
+          <Route
+            path="/ask"
+            element={
+              <Protected>
+                <LazyPage>
+                  <AskPage />
+                </LazyPage>
+              </Protected>
+            }
+          />
+          <Route
+            path="/sessions"
+            element={
+              <Protected>
+                <LazyPage>
+                  <SessionsPage />
+                </LazyPage>
+              </Protected>
+            }
+          />
+          <Route
+            path="/sessions/:sessionId"
+            element={
+              <Protected>
+                <LazyPage>
+                  <SessionDetailPage />
+                </LazyPage>
+              </Protected>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
