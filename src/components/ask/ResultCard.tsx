@@ -100,7 +100,9 @@ function FirstAidList({ items }: { items: { text: string; precaution: string | n
 
 export function ResultCard({ result }: { result: AssessmentResult }) {
   const isUnseededFallback =
-    result.tier !== 3 && (result.response as any).needsWebSearchGrounding === true;
+    result.tier !== 3 &&
+    "needsWebSearchGrounding" in result.response &&
+    result.response.needsWebSearchGrounding === true;
 
   if (isUnseededFallback) {
     return (

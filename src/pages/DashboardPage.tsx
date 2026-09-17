@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useMemo } from "react";
 import {
   MessageSquarePlus,
   RefreshCcw,
@@ -52,21 +51,21 @@ export function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  // Live metrics derived from locally-logged sessions
-  const recent = useMemo(() => (user?.sub ? getLoggedSessions(user.sub)[0] : undefined), [user?.sub]);
-  const metrics = useMemo(() => {
-    const sessions = user?.sub ? getLoggedSessions(user.sub) : [];
-    const total = sessions.length;
-    const last = sessions[0]; // stored most-recent-first
-    const lastLabel = last
-      ? new Date(last.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-      : "—";
-    return [
-      { icon: Activity, label: "Total Assessments", value: total > 0 ? String(total) : "0" },
-      { icon: Clock, label: "Active Follow-ups", value: total > 0 ? "Open" : "None" },
-      { icon: CalendarCheck, label: "Last Consultation", value: lastLabel },
-    ];
-  }, [user?.sub]);
+  // Live metrics derived from locally-logged sessions (React Compiler memoizes
+  // automatically — no manual useMemo needed here).
+  const sessions = user?.sub ? getLoggedSessions(user.sub) : [];
+  const recent = sessions[0]; // stored most-recent-first
+
+  const total = sessions.length;
+  const lastLabel = recent
+    ? new Date(recent.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "—";
+
+  const metrics = [
+    { icon: Activity, label: "Total Assessments", value: total > 0 ? String(total) : "0" },
+    { icon: Clock, label: "Active Follow-ups", value: total > 0 ? "Open" : "None" },
+    { icon: CalendarCheck, label: "Last Consultation", value: lastLabel },
+  ];
 
   const hasRecentSession = Boolean(recent);
   const recentSessionId = recent?.sessionId ?? "";

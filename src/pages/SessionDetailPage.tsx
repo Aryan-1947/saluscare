@@ -68,7 +68,7 @@ export function SessionDetailPage() {
       })
       .catch(() => setError("Could not load this session."))
       .finally(() => setLoading(false));
-  }, [sessionId]);
+  }, [sessionId, getHistory]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

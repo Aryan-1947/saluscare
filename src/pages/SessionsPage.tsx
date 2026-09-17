@@ -46,7 +46,13 @@ export function SessionsPage() {
   const navigate = useNavigate();
 
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Lazy init: if there are no logged sessions at mount, skip the loading state
+  // entirely (avoids a synchronous setState inside the loading effect).
+  const [loading, setLoading] = useState(() => {
+    const stored = localStorage.getItem(`salus-sessions:${user?.sub ?? ""}`);
+    const parsed = stored ? (JSON.parse(stored) as unknown[]) : [];
+    return parsed.length > 0;
+  });
   const [query, setQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
 
@@ -65,10 +71,7 @@ export function SessionsPage() {
     if (!user?.sub) return;
 
     const logged = getLoggedSessions(user.sub);
-    if (logged.length === 0) {
-      setLoading(false);
-      return;
-    }
+    if (logged.length === 0) return;
 
     let cancelled = false;
 
@@ -116,7 +119,7 @@ export function SessionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.sub]);
+  }, [user?.sub, getHistory]);
 
   return (
     <div className="px-4 md:px-8 py-8 md:py-12 max-w-3xl mx-auto">
