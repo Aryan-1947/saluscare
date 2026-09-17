@@ -1,6 +1,6 @@
 import Groq from "npm:groq-sdk@1";
 
-const VISION_MODEL = "qwen/qwen3.6-27b";
+const VISION_MODEL = "qwen/qwen3.8-27b";
 
 const VISION_SYSTEM_PROMPT = `You are a clinical visual-observation assistant. Describe only what is visibly present in the image (e.g. redness, swelling, discoloration, pus, bleeding, rash pattern). Do NOT state a diagnosis or severity conclusion. Respond ONLY with valid JSON matching this shape:
 {

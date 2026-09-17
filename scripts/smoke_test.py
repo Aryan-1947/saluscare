@@ -1,0 +1,235 @@
+#!/usr/bin/env python
+"""End-to-end smoke test for the deployed SalusCare edge functions.
+
+Usage (from saluscare-backend/):
+    python scripts/smoke_test.py
+
+Reads AUTH0_* and SUPABASE_URL from .env, fetches a fresh M2M token at
+runtime (never printed), then exercises every endpoint including the
+clarification protocol, the follow-up lifecycle, red flags, and the
+image flow. Exits non-zero if any check fails.
+"""
+
+import base64
+import json
+import pathlib
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+
+# Windows consoles default to cp1252 and crash printing arrows/curly quotes.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+IMAGE_FIXTURE = ROOT / "tests" / "fixtures" / "test-image.webp"
+
+results: list[tuple[str, str, str]] = []  # (name, status, detail)
+
+
+def load_env() -> dict:
+    env = {}
+    for line in (ROOT / ".env").read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            env[k] = v.strip().strip("\"'")
+    return env
+
+
+def get_token(env: dict) -> str:
+    data = urllib.parse.urlencode({
+        "client_id": env["AUTH0_CLIENT_ID"],
+        "client_secret": env["AUTH0_CLIENT_SECRET"],
+        "audience": env["AUTH0_AUDIENCE"],
+        "grant_type": "client_credentials",
+    }).encode()
+    req = urllib.request.Request(
+        f"https://{env['AUTH0_DOMAIN']}/oauth/token",
+        data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.load(resp)["access_token"]
+
+
+def call(base: str, token: str, method: str, path: str, body: dict | None = None,
+         retries: int = 2) -> tuple[int, dict | list | str]:
+    """HTTP call with retry on 429 (Groq/Supabase rate limits)."""
+    data = json.dumps(body).encode() if body is not None else None
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(f"{base}/functions/v1/{path}", data=data,
+                                     headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                raw = resp.read().decode("utf-8")
+                try:
+                    return resp.status, json.loads(raw)
+                except json.JSONDecodeError:
+                    return resp.status, raw
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode("utf-8", errors="replace")
+            if e.code == 429 and attempt < retries:
+                wait = 15 * (attempt + 1)
+                print(f"    (429 rate-limited, waiting {wait}s...)")
+                time.sleep(wait)
+                continue
+            try:
+                return e.code, json.loads(raw)
+            except json.JSONDecodeError:
+                return e.code, raw
+    raise RuntimeError("unreachable")
+
+
+def record(name: str, ok: bool, detail: str):
+    status = "PASS" if ok else "FAIL"
+    results.append((name, status, detail))
+    print(f"  [{status}] {name} — {detail}")
+
+
+def summary() -> bool:
+    print("\n" + "=" * 60)
+    failed = [r for r in results if r[1] == "FAIL"]
+    for name, status, detail in results:
+        print(f"  {status}  {name}")
+    print("=" * 60)
+    print(f"  {len(results) - len(failed)} passed, {len(failed)} failed")
+    return not failed
+
+
+def main() -> int:
+    env = load_env()
+    missing = [k for k in ("AUTH0_DOMAIN", "AUTH0_AUDIENCE", "AUTH0_CLIENT_ID",
+                           "AUTH0_CLIENT_SECRET", "SUPABASE_URL") if not env.get(k)]
+    if missing:
+        print(f"Missing in .env: {missing}")
+        return 2
+
+    base = env["SUPABASE_URL"].rstrip("/")
+    token = get_token(env)
+    print(f"Token acquired ({len(token)} chars). Base: {base}\n")
+
+    # ── 1. Auth enforcement ────────────────────────────────────────────────
+    req = urllib.request.Request(f"{base}/functions/v1/session-start", data=b"", method="POST")
+    try:
+        urllib.request.urlopen(req, timeout=30)
+        record("401 without token", False, "endpoint accepted an unauthenticated request")
+    except urllib.error.HTTPError as e:
+        record("401 without token", e.code == 401, f"HTTP {e.code}")
+
+    # ── 2. session-start ───────────────────────────────────────────────────
+    code, body = call(base, token, "POST", "session-start")
+    sid_main = body.get("sessionId") if isinstance(body, dict) else None
+    record("session-start", code == 200 and bool(sid_main), f"HTTP {code}, sessionId={sid_main}")
+
+    # ── 3. session-message: sufficient info → full triage result ──────────
+    # skipClarification makes this deterministic: without it the intake agent
+    # may legitimately ask a clarifying question instead of triaging.
+    code, body = call(base, token, "POST", "session-message", {
+        "text": "I have a sore throat for the past two days, the pain is moderate and worse when I swallow",
+        "sessionId": sid_main,
+        "skipClarification": True,
+    })
+    ok = code == 200 and body.get("tier") in (1, 2, 3) and bool(body.get("response"))
+    expl_len = len(body.get("explanation") or "")
+    record("session-message triage", ok,
+           f"HTTP {code}, tier={body.get('tier')}, explanation={expl_len} chars")
+
+    # ── 4. session-history: turns logged, incl. assistant result ──────────
+    code, body = call(base, token, "GET", f"session-history?sessionId={sid_main}")
+    turns = body.get("turns", []) if isinstance(body, dict) else []
+    roles = [t.get("role") for t in turns]
+    record("session-history logs turns", code == 200 and "user" in roles and "assistant" in roles,
+           f"HTTP {code}, turns={len(turns)}, roles={roles}")
+
+    # ── 5. Follow-up lifecycle ─────────────────────────────────────────────
+    sid_gq = str(uuid.uuid4())
+    code, body = call(base, token, "POST", "session-followup", {
+        "text": "What foods should I avoid while my throat hurts?",
+        "parentSessionId": sid_main, "newSessionId": sid_gq,
+    })
+    ok = code == 200 and body.get("isGeneralAnswer") is True and bool(body.get("answer"))
+    record("followup: general question answered", ok,
+           f"HTTP {code}, isGeneralAnswer={body.get('isGeneralAnswer') if isinstance(body, dict) else '?'}")
+
+    code, body = call(base, token, "GET", "session-followups")
+    open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
+    record("general question keeps parent open", sid_main in open_ids,
+           f"open: {[i[:8] for i in open_ids]}")
+
+    sid_worse = str(uuid.uuid4())
+    code, body = call(base, token, "POST", "session-followup", {
+        "text": "The sore throat is much worse today, I can barely swallow and the pain is severe",
+        "parentSessionId": sid_main, "newSessionId": sid_worse,
+    })
+    tier = body.get("tier") if isinstance(body, dict) else None
+    ok = code == 200 and tier in (2, 3)
+    record("followup: worsened escalates tier", ok, f"HTTP {code}, tier={tier}")
+
+    code, body = call(base, token, "GET", "session-followups")
+    open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
+    record("worsened closes parent, opens new", sid_main not in open_ids and sid_worse in open_ids,
+           f"open: {[i[:8] for i in open_ids]}")
+
+    sid_red = str(uuid.uuid4())
+    # Red-flag matching is a literal substring match against the red_flags table:
+    # the phrasing below uses exact stored patterns ('throat closing',
+    # 'difficulty breathing') so the emergency path is exercised deterministically.
+    code, body = call(base, token, "POST", "session-followup", {
+        "text": "Now I have severe difficulty breathing and my throat closing is happening, it feels like anaphylaxis",
+        "parentSessionId": sid_worse, "newSessionId": sid_red,
+    })
+    record("followup: red flag -> tier 3 emergency", code == 200 and body.get("tier") == 3,
+           f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
+
+    # ── 6. session-image: with caption → vision fusion → full result ──────
+    sid_img = str(uuid.uuid4())
+    img_b64 = base64.b64encode(IMAGE_FIXTURE.read_bytes()).decode()
+    code, body = call(base, token, "POST", "session-image", {
+        "imageBase64": img_b64,
+        "imageMimeType": "image/webp",
+        "text": "This is my skin, it has been irritated for two days and it is mildly itchy",
+        "sessionId": sid_img,
+    })
+    if isinstance(body, dict) and body.get("needsClarification"):
+        record("session-image (captioned)", True,
+               f"HTTP {code}, needsClarification (valid path): {body.get('clarifyingQuestion', '')[:60]}")
+    else:
+        vf = body.get("visualFindings") if isinstance(body, dict) else None
+        ok = code == 200 and bool(body.get("response")) and vf is not None
+        record("session-image (captioned)", ok,
+               f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}, visualFindings={str(vf)[:60]}")
+
+    # history should show the image turn with a re-signed URL
+    code, body = call(base, token, "GET", f"session-history?sessionId={sid_img}")
+    turns = body.get("turns", []) if isinstance(body, dict) else []
+    img_turns = [t for t in turns if t.get("kind") == "image"]
+    has_url = img_turns and bool(img_turns[0].get("imageUrl"))
+    record("image turn logged with signed URL", code == 200 and bool(img_turns) and has_url,
+           f"HTTP {code}, image turns={len(img_turns)}, signedUrl={'yes' if has_url else 'no'}")
+
+    # ── 7. session-image: no caption → forced clarification ───────────────
+    sid_img2 = str(uuid.uuid4())
+    code, body = call(base, token, "POST", "session-image", {
+        "imageBase64": img_b64, "imageMimeType": "image/webp", "sessionId": sid_img2,
+    })
+    ok = code == 200 and body.get("needsClarification") is True and bool(body.get("imageUrl"))
+    record("session-image (no caption) asks clarification", ok,
+           f"HTTP {code}, question={body.get('clarifyingQuestion', '')[:50] if isinstance(body, dict) else '?'}")
+
+    # ── 8. Isolation probe: unknown session → empty, not an error ─────────
+    code, body = call(base, token, "GET",
+                      "session-history?sessionId=00000000-0000-0000-0000-000000000000")
+    record("isolation probe returns empty", code == 200 and body.get("turns") == [],
+           f"HTTP {code}, turns={body.get('turns') if isinstance(body, dict) else '?'}")
+
+    print(f"\nSessions created this run: {sid_main}, {sid_worse}, {sid_red}, {sid_img}, {sid_img2}")
+    return 0 if summary() else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
