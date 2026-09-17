@@ -1,16 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireAuthedContext } from "../_shared/scope.ts";
+import { corsHeadersFor, preflightResponse } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rateLimiter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+const RATE_LIMIT = { endpoint: "session-history", limit: 120, windowSeconds: 300 };
 
 // Signed URL lifetime. 24h keeps images viewable within a typical revisit
 // window without making the URLs effectively permanent.
@@ -45,17 +43,22 @@ async function resignImageUrls(
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return preflightResponse(req);
   }
+
+  const headers = corsHeadersFor(req.headers.get("origin"));
 
   const authed = await requireAuthedContext(supabase, req);
   if (!authed.ok) {
     return new Response(JSON.stringify({ error: "Unauthorized", detail: authed.error }), {
       status: 401,
-      headers: corsHeaders,
+      headers,
     });
   }
   const ctx = authed.ctx;
+
+  const rl = await checkRateLimit(supabase, ctx.userId, RATE_LIMIT);
+  if (!rl.allowed) return rateLimitResponse(rl, headers);
 
   try {
     const url = new URL(req.url);
@@ -64,7 +67,7 @@ Deno.serve(async (req: Request) => {
     if (!groupId) {
       return new Response(JSON.stringify({ error: "Missing 'sessionId' query parameter" }), {
         status: 400,
-        headers: corsHeaders,
+        headers,
       });
     }
 
@@ -80,7 +83,7 @@ Deno.serve(async (req: Request) => {
     if (chatTurnsError) {
       return new Response(JSON.stringify({ error: chatTurnsError.message }), {
         status: 500,
-        headers: corsHeaders,
+        headers,
       });
     }
 
@@ -100,7 +103,7 @@ Deno.serve(async (req: Request) => {
             createdAt: t.created_at,
           })),
         }),
-        { status: 200, headers: corsHeaders }
+        { status: 200, headers }
       );
     }
 
@@ -116,14 +119,14 @@ Deno.serve(async (req: Request) => {
     if (legacyError) {
       return new Response(JSON.stringify({ error: legacyError.message }), {
         status: 500,
-        headers: corsHeaders,
+        headers,
       });
     }
 
     const historyRows = legacyRows ?? [];
     const isKnownRoot = historyRows.some((h) => h.parent_session_id === groupId || h.session_id === groupId);
     if (!isKnownRoot) {
-      return new Response(JSON.stringify({ groupId, turns: [] }), { status: 200, headers: corsHeaders });
+      return new Response(JSON.stringify({ groupId, turns: [] }), { status: 200, headers });
     }
 
     // Build the root -> leaf chain from this user's rows only.
@@ -149,7 +152,7 @@ Deno.serve(async (req: Request) => {
     if (sessionsError) {
       return new Response(JSON.stringify({ error: sessionsError.message }), {
         status: 500,
-        headers: corsHeaders,
+        headers,
       });
     }
 
@@ -168,12 +171,12 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ groupId, turns: legacyTurns }), {
       status: 200,
-      headers: corsHeaders,
+      headers,
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: corsHeaders,
+      headers,
     });
   }
 });

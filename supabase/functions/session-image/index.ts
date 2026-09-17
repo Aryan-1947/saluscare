@@ -7,7 +7,8 @@ import { runVisionFusionAgent } from "../_shared/visionAgent.ts";
 import { runTriageEngine } from "../_shared/triageEngine.ts";
 import { buildEmergencyResponse } from "../_shared/responseBuilders.ts";
 import { generateTierResponse } from "../_shared/generativeResponseBuilder.ts";
-import { logChatTurn } from "../_shared/chatLog.ts";
+import { corsHeadersFor, preflightResponse } from "../_shared/cors.ts";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rateLimiter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -16,25 +17,25 @@ const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY")!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+const RATE_LIMIT = { endpoint: "session-image", limit: 10, windowSeconds: 300 }; // images = vision-model spend
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return preflightResponse(req);
   }
+
+  const headers = corsHeadersFor(req.headers.get("origin"));
 
   const authed = await requireAuthedContext(supabase, req);
   if (!authed.ok) {
     return new Response(JSON.stringify({ error: "Unauthorized", detail: authed.error }), {
       status: 401,
-      headers: corsHeaders,
+      headers,
     });
   }
   const ctx = authed.ctx;
+
+  const rl = await checkRateLimit(supabase, ctx.userId, RATE_LIMIT);  if (!rl.allowed) return rateLimitResponse(rl, headers);
 
   try {
     const { imageBase64, imageMimeType, text, sessionId, groupId } = await req.json();
@@ -43,7 +44,7 @@ Deno.serve(async (req: Request) => {
     if (!imageBase64 || !sessionId) {
       return new Response(JSON.stringify({ error: "Missing 'imageBase64' or 'sessionId' in request body" }), {
         status: 400,
-        headers: corsHeaders,
+        headers,
       });
     }
 
@@ -58,10 +59,9 @@ Deno.serve(async (req: Request) => {
       .upload(filePath, binaryData, { contentType: imageMimeType ?? "image/jpeg" });
 
     if (uploadError) {
-      return new Response(JSON.stringify({ error: `Image upload failed: ${uploadError.message}` }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+      return new Response(JSON.stringify({ error: `Image upload failed: ${uploadError.message}` }),{ status: 500,
+      headers,
+    });
     }
 
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -69,10 +69,9 @@ Deno.serve(async (req: Request) => {
       .createSignedUrl(filePath, 3600);
 
     if (signedUrlError || !signedUrlData) {
-      return new Response(JSON.stringify({ error: "Failed to generate image URL" }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+      return new Response(JSON.stringify({ error: "Failed to generate image URL" }),{ status: 500,
+      headers,
+    });
     }
 
     const imageUrl = signedUrlData.signedUrl;
@@ -81,7 +80,9 @@ Deno.serve(async (req: Request) => {
 
     // If no caption text provided, ask a clarifying question instead of triaging on image alone
     if (!text || text.trim().length === 0) {
-      await logChatTurn(supabase, chatGroupId, "assistant", "question", "How long has this looked like this?");
+      // Ownership matters here too: an unscoped insert would stamp NULL owner
+      // and make this turn invisible to the user's own history reads.
+      await logOwnedChatTurn(ctx, chatGroupId, "assistant", "question", "How long has this looked like this?");
       return new Response(
         JSON.stringify({
           sessionId,
@@ -89,7 +90,7 @@ Deno.serve(async (req: Request) => {
           clarifyingQuestion: "How long has this looked like this?",
           imageUrl,
         }),
-        { status: 200, headers: corsHeaders }
+        { status: 200, headers }
       );
     }
 
@@ -119,7 +120,7 @@ Deno.serve(async (req: Request) => {
             imageUrl,
             imageContext: `${text}. Visible findings: ${vision.visualFindings}`,
           }),
-          { status: 200, headers: corsHeaders }
+          { status: 200, headers }
         );
       }
 
@@ -156,12 +157,12 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({ sessionId, tier, triage, visualFindings: vision.visualFindings, response, explanation }),
-      { status: 200, headers: corsHeaders }
+      { status: 200, headers }
     );
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: corsHeaders,
+      headers,
     });
   }
 });

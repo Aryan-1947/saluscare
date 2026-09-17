@@ -113,6 +113,19 @@ def main() -> int:
     token = get_token(env)
     print(f"Token acquired ({len(token)} chars). Base: {base}\n")
 
+    # Clear leftover rate-limit counters so reruns within the 5-minute window
+    # are deterministic (counters table only; no user data involved).
+    if env.get("SUPABASE_SERVICE_ROLE_KEY"):
+        try:
+            req = urllib.request.Request(
+                f"{base}/rest/v1/rate_limit_hits?id=gt.0", method="DELETE",
+                headers={"apikey": env["SUPABASE_SERVICE_ROLE_KEY"],
+                         "Authorization": f"Bearer {env['SUPABASE_SERVICE_ROLE_KEY']}"})
+            urllib.request.urlopen(req, timeout=30)
+            print("Rate-limit counters cleared.\n")
+        except urllib.error.HTTPError as e:
+            print(f"Note: could not clear counters (HTTP {e.code}) - reruns may 429 early.\n")
+
     # ── 1. Auth enforcement ────────────────────────────────────────────────
     req = urllib.request.Request(f"{base}/functions/v1/session-start", data=b"", method="POST")
     try:
@@ -251,6 +264,51 @@ def main() -> int:
                       "session-history?sessionId=00000000-0000-0000-0000-000000000000")
     record("isolation probe returns empty", code == 200 and body.get("turns") == [],
            f"HTTP {code}, turns={body.get('turns') if isinstance(body, dict) else '?'}")
+
+    # ── 9. CORS: preflight responses are origin-allowlisted ───────────────
+    def options_call(path: str, origin: str | None):
+        headers = {"Content-Type": "application/json"}
+        if origin:
+            headers["Origin"] = origin
+        req = urllib.request.Request(f"{base}/functions/v1/{path}", data=None,
+                                     headers=headers, method="OPTIONS")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return resp.status, resp.headers
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers
+
+    code, hdrs = options_call("session-start", "http://localhost:5173")
+    acao = hdrs.get("Access-Control-Allow-Origin")
+    record("CORS: localhost dev origin allowed", code in (200, 204) and acao == "http://localhost:5173",
+           f"HTTP {code}, ACAO={acao}")
+
+    code, hdrs = options_call("session-start", "https://evil.example.com")
+    acao = hdrs.get("Access-Control-Allow-Origin")
+    record("CORS: unknown origin gets no ACAO header", acao is None, f"HTTP {code}, ACAO={acao}")
+
+    # ── 10. Rate limiting: burst session-start until 429 ──────────────────
+    # Runs LAST so earlier checks are unaffected. Stops at the first 429 to
+    # minimize consumption. A re-run within the 5-minute window may see an
+    # immediate 429 (leftover hits) — that still proves the limiter exists.
+    # If no 429 ever appears across the burst, rate limiting is missing.
+    got_429_headers = None
+    attempts = 0
+    for i in range(40):
+        attempts = i + 1
+        try:
+            req = urllib.request.Request(
+                f"{base}/functions/v1/session-start", data=b"", method="POST",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                pass
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                got_429_headers = e.headers
+                break
+    retry_after = got_429_headers.get("Retry-After") if got_429_headers else None
+    record("rate limit: 429 + Retry-After on burst", got_429_headers is not None and bool(retry_after),
+           f"429 after {attempts} requests, Retry-After={retry_after}")
 
     print(f"\nSessions created this run: {sid_main}, {sid_worse}, {sid_red}, {sid_para}, {sid_neg}, {sid_img}, {sid_img2}")
     return 0 if summary() else 1
