@@ -98,6 +98,17 @@ export type FollowupsResponse = {
   followups: FollowupSummary[];
 };
 
+export type SessionSummary = {
+  sessionId: string;
+  complaintText: string;
+  tier: number;
+  lastActivityAt: string;
+};
+
+export type SummariesResponse = {
+  summaries: SessionSummary[];
+};
+
 export type HistoryResponse = {
   groupId: string;
   turns: HistoryTurn[];

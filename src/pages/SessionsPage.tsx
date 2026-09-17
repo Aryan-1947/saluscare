@@ -6,6 +6,7 @@ import { Clock, ChevronRight, Inbox, Search, ShieldCheck, Stethoscope, Siren } f
 import { useApi } from "@/hooks/useApi";
 import { getLoggedSessions } from "@/lib/sessionLog";
 import { cn } from "@/lib/utils";
+import type { SessionSummary } from "@/types/api";
 
 const tierLabel: Record<number, { label: string; color: string }> = {
   1: { label: "Self Care", color: "text-emerald-600 dark:text-emerald-400" },
@@ -33,21 +34,16 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-type SessionSummary = {
-  sessionId: string;
-  complaintText: string;
-  tier: number;
-  createdAt: string;
-};
+type SessionRow = SessionSummary & { startedAt: string };
 
 export function SessionsPage() {
   const { user } = useAuth0();
-  const { getHistory } = useApi();
+  const { getSummaries } = useApi();
   const navigate = useNavigate();
 
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
-  // Lazy init: if there are no logged sessions at mount, skip the loading state
-  // entirely (avoids a synchronous setState inside the loading effect).
+  const [rows, setRows] = useState<SessionRow[]>([]);
+  // Lazy init: if there are no logged sessions at mount, skip the loading
+  // state entirely (nothing to fetch — show the empty state immediately).
   const [loading, setLoading] = useState(() => {
     const stored = localStorage.getItem(`salus-sessions:${user?.sub ?? ""}`);
     const parsed = stored ? (JSON.parse(stored) as unknown[]) : [];
@@ -56,8 +52,8 @@ export function SessionsPage() {
   const [query, setQuery] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
 
-  const filteredSessions = useMemo(() => {
-    return sessions.filter((s) => {
+  const filteredRows = useMemo(() => {
+    return rows.filter((s) => {
       if (tierFilter !== "all" && String(s.tier) !== tierFilter) return false;
       if (query.trim()) {
         const q = query.toLowerCase();
@@ -65,7 +61,7 @@ export function SessionsPage() {
       }
       return true;
     });
-  }, [sessions, query, tierFilter]);
+  }, [rows, query, tierFilter]);
 
   useEffect(() => {
     if (!user?.sub) return;
@@ -75,60 +71,38 @@ export function SessionsPage() {
 
     let cancelled = false;
 
-    const upsert = (summary: SessionSummary) => {
-      if (cancelled) return;
-      setSessions((prev) =>
-        [...prev, summary].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-      );
-    };
-
-    const fetchOne = async (s: { sessionId: string; startedAt: string }) => {
-      try {
-        // New response shape: { groupId, turns } — user/assistant chat turns.
-        const history = await getHistory(s.sessionId);
-        const turns = history.turns ?? [];
-        if (turns.length === 0) return;
-
-        const reversed = [...turns].reverse();
-        const lastUserText = reversed.find((t) => t.role === "user" && t.kind === "text" && t.content)?.content ?? null;
-        const lastResult = reversed.find((t) => t.kind === "result");
-        const lastResultPayload = (lastResult?.result ?? null) as { tier?: number } | null;
-        const lastTimestamp = reversed.find((t) => t.createdAt)?.createdAt;
-
-        upsert({
-          // Keep the logged root session id as the navigation target — the
-          // detail page resolves the whole conversation from it.
-          sessionId: s.sessionId,
-          complaintText: lastUserText ?? "Assessment",
-          tier: lastResultPayload?.tier ?? 1,
-          createdAt: lastTimestamp ?? s.startedAt,
+    // ONE batched request for all logged roots (previously one history call
+    // per session — N+1, each pulling full turns + re-signing image URLs,
+    // which made the list render progressively over seconds).
+    getSummaries(logged.map((s) => s.sessionId))
+      .then((res) => {
+        if (cancelled) return;
+        const byId = new Map((res.summaries ?? []).map((s) => [s.sessionId, s]));
+        const next: SessionRow[] = logged.map((l) => {
+          const s = byId.get(l.sessionId);
+          return {
+            sessionId: l.sessionId,
+            // Session unknown to the backend (or empty): fall back to the
+            // locally logged start time so the row still renders.
+            complaintText: s?.complaintText ?? "Assessment",
+            tier: s?.tier ?? 1,
+            lastActivityAt: s?.lastActivityAt ?? l.startedAt,
+            startedAt: l.startedAt,
+          };
         });
-      } catch {
-        // Skip sessions that fail to load — don't block the rest of the list
-      }
-    };
-
-    // Bounded concurrency: at most 4 history requests in flight at once
-    const CONCURRENCY = 4;
-    const queue = [...logged];
-    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
-      while (queue.length > 0) {
-        const next = queue.shift();
-        if (!next) break;
-        await fetchOne(next);
-      }
-    });
-
-    Promise.all(workers).then(() => {
-      if (!cancelled) setLoading(false);
-    });
+        setRows(next.sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()));
+      })
+      .catch(() => {
+        // Silently degrade to the empty state; a retry happens on next mount.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [user?.sub, getHistory]);
+  }, [user?.sub, getSummaries]);
 
   return (
     <div className="px-4 md:px-8 py-8 md:py-12 max-w-3xl mx-auto">
@@ -175,7 +149,7 @@ export function SessionsPage() {
         </div>
       )}
 
-      {!loading && sessions.length === 0 && (
+      {!loading && rows.length === 0 && (
         <div className="text-center py-16">
           <Inbox size={32} className="mx-auto text-[#94A3B8] dark:text-neutral-600 mb-3" />
           <p className="text-[#64748B] dark:text-neutral-400 mb-4">No assessments yet.</p>
@@ -188,7 +162,7 @@ export function SessionsPage() {
         </div>
       )}
 
-      {!loading && sessions.length > 0 && filteredSessions.length === 0 && (
+      {!loading && rows.length > 0 && filteredRows.length === 0 && (
         <div className="text-center py-14">
           <Search size={28} className="mx-auto text-[#94A3B8] dark:text-neutral-600 mb-3" />
           <p className="text-sm text-[#64748B] dark:text-neutral-400">No sessions match your search or filter.</p>
@@ -206,7 +180,7 @@ export function SessionsPage() {
 
       <div className="flex flex-col gap-3">
         <AnimatePresence initial={false}>
-        {filteredSessions.map((s, i) => {
+        {filteredRows.map((s, i) => {
           const config = tierLabel[s.tier] ?? tierLabel[1];
           return (
             <motion.button
@@ -228,7 +202,7 @@ export function SessionsPage() {
                   </span>
                   <span className="flex items-center gap-1 text-xs text-[#64748B] dark:text-neutral-500">
                     <Clock size={11} />
-                    {timeAgo(s.createdAt)}
+                    {timeAgo(s.lastActivityAt)}
                   </span>
                 </div>
               </div>
@@ -239,9 +213,9 @@ export function SessionsPage() {
         </AnimatePresence>
       </div>
 
-      {sessions.length > 0 && (
+      {rows.length > 0 && (
         <p className="text-xs text-[#94A3B8] dark:text-neutral-600 text-center mt-6">
-          {filteredSessions.length} of {sessions.length} assessment{sessions.length === 1 ? "" : "s"} shown
+          {filteredRows.length} of {rows.length} assessment{rows.length === 1 ? "" : "s"} shown
         </p>
       )}
     </div>

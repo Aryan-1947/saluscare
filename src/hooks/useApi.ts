@@ -7,6 +7,7 @@ import type {
   GeneralAnswerResult,
   HistoryResponse,
   FollowupsResponse,
+  SummariesResponse,
 } from "@/types/api";
 
 export function useApi() {
@@ -73,5 +74,13 @@ export function useApi() {
     [getAccessTokenSilently]
   );
 
-  return { startSession, sendMessage, sendImage, sendFollowup, getHistory, getFollowups };
+  const getSummaries = useCallback(
+    async (sessionIds: string[]): Promise<SummariesResponse> => {
+      const token = await getAccessTokenSilently();
+      return api.sessionSummaries(token, sessionIds);
+    },
+    [getAccessTokenSilently]
+  );
+
+  return { startSession, sendMessage, sendImage, sendFollowup, getHistory, getFollowups, getSummaries };
 }
