@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
 
     await logOwnedChatTurn(ctx, chatGroupId, "user", "text", text);
 
-    const redFlag = await checkRedFlags(supabase, text, undefined);
+    const redFlag = await checkRedFlags(supabase, text, undefined, { groq });
 
     let tier: 1 | 2 | 3;
     let triage = null;

@@ -176,15 +176,40 @@ def main() -> int:
            f"open: {[i[:8] for i in open_ids]}")
 
     sid_red = str(uuid.uuid4())
-    # Red-flag matching is a literal substring match against the red_flags table:
-    # the phrasing below uses exact stored patterns ('throat closing',
-    # 'difficulty breathing') so the emergency path is exercised deterministically.
+    # Deterministic red-flag layer: stored patterns ('difficulty breathing',
+    # 'throat closing') are matched with negation-guarded, spacing/plural-tolerant
+    # scanning, so exact keywords exercise the fast path.
     code, body = call(base, token, "POST", "session-followup", {
         "text": "Now I have severe difficulty breathing and my throat closing is happening, it feels like anaphylaxis",
         "parentSessionId": sid_worse, "newSessionId": sid_red,
     })
     record("followup: red flag -> tier 3 emergency", code == 200 and body.get("tier") == 3,
            f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
+
+    # Paraphrased emergency (contains no stored red-flag keyword): must be
+    # caught by the LLM safety-net layer, not the deterministic scan.
+    code, body = call(base, token, "POST", "session-start")
+    sid_para = body.get("sessionId") if isinstance(body, dict) else None
+    code, body = call(base, token, "POST", "session-message", {
+        "text": "the swelling is blocking my airway and I can't get any air",
+        "sessionId": sid_para,
+        "skipClarification": True,
+    })
+    record("paraphrased emergency caught by LLM safety net", code == 200 and body.get("tier") == 3,
+           f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
+
+    # Negation guard: red-flag phrases mentioned in the negative must NOT
+    # trigger the emergency path (regression: 'no chest pain' used to trip it).
+    code, body = call(base, token, "POST", "session-start")
+    sid_neg = body.get("sessionId") if isinstance(body, dict) else None
+    code, body = call(base, token, "POST", "session-message", {
+        "text": "I had a scare yesterday but I have no chest pain now, no difficulty breathing, just mild fatigue since this morning",
+        "sessionId": sid_neg,
+        "skipClarification": True,
+    })
+    tier = body.get("tier") if isinstance(body, dict) else None
+    record("negated red flag does not trigger emergency", code == 200 and tier in (1, 2),
+           f"HTTP {code}, tier={tier}")
 
     # ── 6. session-image: with caption → vision fusion → full result ──────
     sid_img = str(uuid.uuid4())
@@ -227,7 +252,7 @@ def main() -> int:
     record("isolation probe returns empty", code == 200 and body.get("turns") == [],
            f"HTTP {code}, turns={body.get('turns') if isinstance(body, dict) else '?'}")
 
-    print(f"\nSessions created this run: {sid_main}, {sid_worse}, {sid_red}, {sid_img}, {sid_img2}")
+    print(f"\nSessions created this run: {sid_main}, {sid_worse}, {sid_red}, {sid_para}, {sid_neg}, {sid_img}, {sid_img2}")
     return 0 if summary() else 1
 
 

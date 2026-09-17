@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
 
     const vision = await runVisionFusionAgent(groq, imageUrl, text);
 
-    const redFlag = await checkRedFlags(supabase, text, vision.visualFindings);
+    const redFlag = await checkRedFlags(supabase, text, vision.visualFindings, { groq, hasImage: true });
 
     let tier: 1 | 2 | 3;
     let triage = null;

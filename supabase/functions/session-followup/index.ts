@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
     // Red-flag check runs on the combined context, before anything else
     await logOwnedChatTurn(ctx, chatGroupId, "user", "text", text);  
 
-    const redFlagCheck = await checkRedFlags(supabase, combinedText, undefined);
+    const redFlagCheck = await checkRedFlags(supabase, combinedText, undefined, { groq });
     if (redFlagCheck.matched) {
       const response = buildEmergencyResponse(redFlagCheck.pattern!);
       const explanation = await runExplainerAgent(groq, response);

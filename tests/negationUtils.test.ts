@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isNegated } from "../supabase/functions/_shared/negationUtils.ts";
+import { isNegated, windowHasNegation } from "../supabase/functions/_shared/negationUtils.ts";
 
 describe("isNegated", () => {
   it("detects a simple negation before the keyword", () => {
@@ -36,5 +36,27 @@ describe("isNegated", () => {
     expect(isNegated("i cannot breathe", "breathe")).toBe(false);
     expect(isNegated("another headache", "headache")).toBe(false);
     expect(isNegated("nothing else matters", "else")).toBe(false);
+  });
+});
+
+describe("windowHasNegation", () => {
+  it("detects a negation in the window before the keyword", () => {
+    const text = "the patient reports no chest pain";
+    const idx = text.indexOf("chest pain");
+    expect(windowHasNegation(text, idx, "chest pain".length)).toBe(true);
+  });
+
+  it("returns false when no negation precedes the keyword", () => {
+    const text = "the patient reports severe chest pain";
+    const idx = text.indexOf("chest pain");
+    expect(windowHasNegation(text, idx, "chest pain".length)).toBe(false);
+  });
+
+  it("matches the isNegated window exactly (pure leading window)", () => {
+    // A negation phrase ending right at the keyword start is fully contained
+    // in the leading window, since all phrases here are shorter than 20 chars.
+    const text = "denies all x negative for chest pain";
+    const idx = text.indexOf("chest pain");
+    expect(windowHasNegation(text, idx)).toBe(true);
   });
 });

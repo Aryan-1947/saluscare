@@ -11,7 +11,13 @@ const NEGATION_PATTERNS = NEGATION_WORDS.map(
 export function isNegated(text: string, keyword: string): boolean {
   const idx = text.indexOf(keyword);
   if (idx === -1) return false;
-  const windowStart = Math.max(0, idx - 20);
-  const preceding = text.slice(windowStart, idx);
-  return NEGATION_PATTERNS.some((pattern) => pattern.test(preceding));
+  return windowHasNegation(text, idx);
+}
+
+/** Checks the 20 characters immediately preceding a keyword occurrence for a
+ * negation word. Any negation phrase ending at the keyword is fully contained
+ * in this window, since all phrases here are far shorter than 20 chars. */
+export function windowHasNegation(text: string, keywordIdx: number): boolean {
+  const windowStart = Math.max(0, keywordIdx - 20);
+  return NEGATION_PATTERNS.some((pattern) => pattern.test(text.slice(windowStart, keywordIdx)));
 }
