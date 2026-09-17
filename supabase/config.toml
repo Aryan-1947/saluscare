@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.session-history]
 verify_jwt = false
+
+[functions.session-followups]
+verify_jwt = false

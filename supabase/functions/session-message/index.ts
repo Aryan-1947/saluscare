@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { requireAuthedContext, logOwnedChatTurn, insertOwnedSession } from "../_shared/scope.ts";
+import { requireAuthedContext, logOwnedChatTurn, insertOwnedSession, openSession } from "../_shared/scope.ts";
 import Groq from "npm:groq-sdk@1";
 import { checkRedFlags } from "../_shared/redFlagMatcher.ts";
 import { runIntakeAgent, runExplainerAgent, runSufficiencyCheck } from "../_shared/agents.ts";
@@ -100,6 +100,8 @@ Deno.serve(async (req: Request) => {
     if (insertError) {
       console.error("Failed to log session:", insertError);
     }
+
+    await openSession(ctx, sessionId);
 
     await logOwnedChatTurn(ctx, chatGroupId, "assistant", "result", explanation, null, null, { sessionId, tier, response });
 

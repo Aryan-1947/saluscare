@@ -99,3 +99,75 @@ export async function insertOwnedSessionHistory(
   });
   if (error) console.error("Failed to log session history:", error.message);
 }
+
+// ---------------------------------------------------------------------------
+// Session lifecycle status (see migration 20260917130000).
+// A session is 'open' while it still awaits a follow-up; a follow-up closes
+// the parent ('closed_followed_up', or 'closed_emergency' when the update
+// triaged tier 3) and opens the new one.
+// ---------------------------------------------------------------------------
+
+export type SessionStatus = "open" | "closed_followed_up" | "closed_emergency";
+
+// New sessions open by default. Failure to stamp a status is logged but not
+// fatal — the metric treats NULL as inactive.
+export async function openSession(ctx: AuthedContext, sessionId: string) {
+  const { error } = await ctx.supabase
+    .from("sessions")
+    .update({ status: "open" as SessionStatus })
+    .eq("id", sessionId)
+    .eq("auth0_user_id", ctx.userId);
+  if (error) console.error("Failed to set session status:", error.message);
+}
+
+// Close the parent session and open the follow-up, as one pair of writes.
+export async function transitionSessionStatus(
+  ctx: AuthedContext,
+  parentSessionId: string,
+  newSessionId: string,
+  parentStatus: Exclude<SessionStatus, "open"> = "closed_followed_up"
+) {
+  const { error: closeError } = await ctx.supabase
+    .from("sessions")
+    .update({ status: parentStatus })
+    .eq("id", parentSessionId)
+    .eq("auth0_user_id", ctx.userId);
+  if (closeError) {
+    console.error("Failed to close parent session:", closeError.message);
+    return;
+  }
+  await openSession(ctx, newSessionId);
+}
+
+export type FollowupSummary = {
+  sessionId: string;
+  complaintText: string | null;
+  tier: number;
+  createdAt: string;
+};
+
+// The real "Active Follow-ups" list: this user's open sessions, newest first.
+export async function getOpenSessions(
+  ctx: AuthedContext,
+  limit = 50
+): Promise<FollowupSummary[]> {
+  const { data, error } = await ctx.supabase
+    .from("sessions")
+    .select("id, user_input_text, tier, created_at")
+    .eq("auth0_user_id", ctx.userId)
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Failed to list open sessions:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((s: any) => ({
+    sessionId: s.id,
+    complaintText: s.user_input_text ?? null,
+    tier: s.tier ?? 1,
+    createdAt: s.created_at,
+  }));
+}

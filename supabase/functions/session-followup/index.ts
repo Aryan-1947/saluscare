@@ -5,6 +5,7 @@ import {
   insertOwnedSession,
   insertOwnedSessionHistory,
   logOwnedChatTurn,
+  transitionSessionStatus,
 } from "../_shared/scope.ts";
 import Groq from "npm:groq-sdk@1";
 import { checkRedFlags } from "../_shared/redFlagMatcher.ts";
@@ -95,6 +96,8 @@ Deno.serve(async (req: Request) => {
         final_response: response,
       });
       if (redFlagInsertError) console.error("Failed to log session:", redFlagInsertError);
+      // The red flag ends the chain: close parent as emergency-opened, open the new session.
+      await transitionSessionStatus(ctx, parentSessionId, newSessionId, "closed_emergency");
       await insertOwnedSessionHistory(ctx, parentSessionId, newSessionId, "new_red_flag");
 
       await logOwnedChatTurn(ctx, chatGroupId, "assistant", "result", explanation, null, null, { sessionId: newSessionId, tier: 3, response });
@@ -109,6 +112,8 @@ Deno.serve(async (req: Request) => {
     if (messageType === "general_question") {
       const answer = await runGeneralQuestionAgent(groq, priorSession, text, recentExchanges);
       await logOwnedChatTurn(ctx, chatGroupId, "assistant", "answer", answer);
+      // A general question isn't a symptom update — the assessment is still
+      // awaiting a real follow-up, so the parent stays open.
       return new Response(
         JSON.stringify({
           sessionId: parentSessionId,
@@ -164,6 +169,8 @@ Deno.serve(async (req: Request) => {
     });
     if (insertError) console.error("Failed to log session:", insertError);
 
+    // The parent assessment got its follow-up: close it, open the new one.
+    await transitionSessionStatus(ctx, parentSessionId, newSessionId);
     await insertOwnedSessionHistory(ctx, parentSessionId, newSessionId, changeType);
 
     await logOwnedChatTurn(ctx, chatGroupId, "assistant", "result", explanation, null, null, { sessionId: newSessionId, tier, response });
