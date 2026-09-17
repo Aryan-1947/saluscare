@@ -9,6 +9,7 @@ import { buildEmergencyResponse } from "../_shared/responseBuilders.ts";
 import { generateTierResponse } from "../_shared/generativeResponseBuilder.ts";
 import { corsHeadersFor, preflightResponse } from "../_shared/cors.ts";
 import { checkRateLimit, rateLimitResponse } from "../_shared/rateLimiter.ts";
+import { buildImagePath } from "../_shared/storageKeys.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -50,8 +51,17 @@ Deno.serve(async (req: Request) => {
 
     // Upload image to Supabase Storage, namespaced per user so storage-level
     // policies can also scope access if direct client reads are ever enabled.
-    const fileExt = (imageMimeType ?? "image/jpeg").split("/")[1] ?? "jpg";
-    const filePath = `${ctx.userId}/${sessionId}/${crypto.randomUUID()}.${fileExt}`;
+    // NOTE: the raw Auth0 sub contains '|' (google-oauth2|123...) which is an
+    // INVALID storage key char — storageSafeId sanitizes every component.
+    let filePath: string;
+    try {
+      filePath = buildImagePath(ctx.userId, sessionId, imageMimeType);
+    } catch (err) {
+      return new Response(JSON.stringify({ error: String(err) }), {
+        status: 400,
+        headers,
+      });
+    }
     const binaryData = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
 
     const { error: uploadError } = await supabase.storage

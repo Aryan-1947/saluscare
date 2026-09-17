@@ -29,6 +29,24 @@ IMAGE_FIXTURE = ROOT / "tests" / "fixtures" / "test-image.webp"
 
 results: list[tuple[str, str, str]] = []  # (name, status, detail)
 
+# Set when a call fails with Groq's daily token-budget (TPD) error. The free
+# tier allows ~200k tokens per rolling 24h window and heavy testing re-consumes
+# it — that is an environment limit, not a product failure, so affected checks
+# are reported as SKIP instead of FAIL.
+groq_budget_down = False
+
+
+def is_groq_budget_error(body) -> bool:
+    s = body if isinstance(body, str) else json.dumps(body)
+    return "tokens per day" in s and ("rate_limit_exceeded" in s or "TPD" in s)
+
+
+def is_budget_blocked(code: int, body) -> bool:
+    """True when the response is Groq's daily-token-budget rejection.
+    Groq sends 429; edge functions may wrap it as 500. Our own limiter's 429
+    body ("Rate limit exceeded") does NOT match this signature."""
+    return code in (429, 500) and is_groq_budget_error(body)
+
 
 def load_env() -> dict:
     env = {}
@@ -91,17 +109,27 @@ def record(name: str, ok: bool, detail: str):
     print(f"  [{status}] {name} — {detail}")
 
 
+def record_skip(name: str, detail: str):
+    results.append((name, "SKIP", detail))
+    print(f"  [SKIP] {name} — {detail}")
+
+
 def summary() -> bool:
     print("\n" + "=" * 60)
     failed = [r for r in results if r[1] == "FAIL"]
+    skipped = [r for r in results if r[1] == "SKIP"]
     for name, status, detail in results:
         print(f"  {status}  {name}")
     print("=" * 60)
-    print(f"  {len(results) - len(failed)} passed, {len(failed)} failed")
+    print(f"  {len(results) - len(failed) - len(skipped)} passed, {len(failed)} failed, {len(skipped)} skipped (Groq budget)")
+    if skipped:
+        print("  NOTE: Groq free tier = ~200k tokens / rolling 24h. Skipped checks are")
+        print("        environment limits, not product failures — rerun after the window clears.")
     return not failed
 
 
 def main() -> int:
+    global groq_budget_down
     env = load_env()
     missing = [k for k in ("AUTH0_DOMAIN", "AUTH0_AUDIENCE", "AUTH0_CLIENT_ID",
                            "AUTH0_CLIENT_SECRET", "SUPABASE_URL") if not env.get(k)]
@@ -118,7 +146,7 @@ def main() -> int:
     if env.get("SUPABASE_SERVICE_ROLE_KEY"):
         try:
             req = urllib.request.Request(
-                f"{base}/rest/v1/rate_limit_hits?id=gt.0", method="DELETE",
+                f"{base}/rest/v1/rate_limit_hits?hit_id=gt.0", method="DELETE",
                 headers={"apikey": env["SUPABASE_SERVICE_ROLE_KEY"],
                          "Authorization": f"Bearer {env['SUPABASE_SERVICE_ROLE_KEY']}"})
             urllib.request.urlopen(req, timeout=30)
@@ -142,113 +170,161 @@ def main() -> int:
     # ── 3. session-message: sufficient info → full triage result ──────────
     # skipClarification makes this deterministic: without it the intake agent
     # may legitimately ask a clarifying question instead of triaging.
+    sid_worse: str | None = None
+    sid_red: str | None = None
+    sid_para: str | None = None
+    sid_neg: str | None = None
+    sid_img: str | None = None
+    sid_img2: str | None = None
     code, body = call(base, token, "POST", "session-message", {
         "text": "I have a sore throat for the past two days, the pain is moderate and worse when I swallow",
         "sessionId": sid_main,
         "skipClarification": True,
     })
-    ok = code == 200 and body.get("tier") in (1, 2, 3) and bool(body.get("response"))
-    expl_len = len(body.get("explanation") or "")
-    record("session-message triage", ok,
-           f"HTTP {code}, tier={body.get('tier')}, explanation={expl_len} chars")
+    if code >= 500 and is_groq_budget_error(body) or code == 429 and is_groq_budget_error(body):
+        groq_budget_down = True
+        record_skip("session-message triage", "Groq free-tier daily token budget exhausted (rolling 24h window)")
+    else:
+        ok = code == 200 and body.get("tier") in (1, 2, 3) and bool(body.get("response"))
+        expl_len = len(body.get("explanation") or "")
+        record("session-message triage", ok,
+               f"HTTP {code}, tier={body.get('tier')}, explanation={expl_len} chars")
 
     # ── 4. session-history: turns logged, incl. assistant result ──────────
-    code, body = call(base, token, "GET", f"session-history?sessionId={sid_main}")
-    turns = body.get("turns", []) if isinstance(body, dict) else []
-    roles = [t.get("role") for t in turns]
-    record("session-history logs turns", code == 200 and "user" in roles and "assistant" in roles,
-           f"HTTP {code}, turns={len(turns)}, roles={roles}")
+    if groq_budget_down:
+        record_skip("session-history logs turns", "depends on the triage call above")
+    else:
+        code, body = call(base, token, "GET", f"session-history?sessionId={sid_main}")
+        turns = body.get("turns", []) if isinstance(body, dict) else []
+        roles = [t.get("role") for t in turns]
+        record("session-history logs turns", code == 200 and "user" in roles and "assistant" in roles,
+               f"HTTP {code}, turns={len(turns)}, roles={roles}")
 
     # ── 5. Follow-up lifecycle ─────────────────────────────────────────────
     sid_gq = str(uuid.uuid4())
-    code, body = call(base, token, "POST", "session-followup", {
-        "text": "What foods should I avoid while my throat hurts?",
-        "parentSessionId": sid_main, "newSessionId": sid_gq,
-    })
-    ok = code == 200 and body.get("isGeneralAnswer") is True and bool(body.get("answer"))
-    record("followup: general question answered", ok,
-           f"HTTP {code}, isGeneralAnswer={body.get('isGeneralAnswer') if isinstance(body, dict) else '?'}")
+    if groq_budget_down:
+        record_skip("followup: general question answered", "Groq daily token budget exhausted")
+    else:
+        code, body = call(base, token, "POST", "session-followup", {
+            "text": "What foods should I avoid while my throat hurts?",
+            "parentSessionId": sid_main, "newSessionId": sid_gq,
+        })
+        if is_budget_blocked(code, body):
+            groq_budget_down = True
+            record_skip("followup: general question answered", "Groq daily token budget exhausted")
+        else:
+            ok = code == 200 and body.get("isGeneralAnswer") is True and bool(body.get("answer"))
+            record("followup: general question answered", ok,
+                   f"HTTP {code}, isGeneralAnswer={body.get('isGeneralAnswer') if isinstance(body, dict) else '?'}")
 
-    code, body = call(base, token, "GET", "session-followups")
-    open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
-    record("general question keeps parent open", sid_main in open_ids,
-           f"open: {[i[:8] for i in open_ids]}")
+    if groq_budget_down:
+        record_skip("general question keeps parent open", "depends on the general-question call")
+    else:
+        code, body = call(base, token, "GET", "session-followups")
+        open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
+        record("general question keeps parent open", sid_main in open_ids,
+               f"open: {[i[:8] for i in open_ids]}")
 
     sid_worse = str(uuid.uuid4())
-    code, body = call(base, token, "POST", "session-followup", {
-        "text": "The sore throat is much worse today, I can barely swallow and the pain is severe",
-        "parentSessionId": sid_main, "newSessionId": sid_worse,
-    })
-    tier = body.get("tier") if isinstance(body, dict) else None
-    ok = code == 200 and tier in (2, 3)
-    record("followup: worsened escalates tier", ok, f"HTTP {code}, tier={tier}")
+    if groq_budget_down:
+        record_skip("followup: worsened escalates tier", "Groq daily token budget exhausted")
+    else:
+        code, body = call(base, token, "POST", "session-followup", {
+            "text": "The sore throat is much worse today, I can barely swallow and the pain is severe",
+            "parentSessionId": sid_main, "newSessionId": sid_worse,
+        })
+        tier = body.get("tier") if isinstance(body, dict) else None
+        if is_budget_blocked(code, body):
+            groq_budget_down = True
+            record_skip("followup: worsened escalates tier", "Groq daily token budget exhausted")
+        else:
+            ok = code == 200 and tier in (2, 3)
+            record("followup: worsened escalates tier", ok, f"HTTP {code}, tier={tier}")
 
-    code, body = call(base, token, "GET", "session-followups")
-    open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
-    record("worsened closes parent, opens new", sid_main not in open_ids and sid_worse in open_ids,
-           f"open: {[i[:8] for i in open_ids]}")
+    if groq_budget_down:
+        record_skip("worsened closes parent, opens new", "depends on the worsened call")
+    else:
+        code, body = call(base, token, "GET", "session-followups")
+        open_ids = {f.get("sessionId") for f in body.get("followups", [])} if isinstance(body, dict) else set()
+        record("worsened closes parent, opens new", sid_main not in open_ids and sid_worse in open_ids,
+               f"open: {[i[:8] for i in open_ids]}")
 
     sid_red = str(uuid.uuid4())
     # Deterministic red-flag layer: stored patterns ('difficulty breathing',
     # 'throat closing') are matched with negation-guarded, spacing/plural-tolerant
     # scanning, so exact keywords exercise the fast path.
-    code, body = call(base, token, "POST", "session-followup", {
-        "text": "Now I have severe difficulty breathing and my throat closing is happening, it feels like anaphylaxis",
-        "parentSessionId": sid_worse, "newSessionId": sid_red,
-    })
-    record("followup: red flag -> tier 3 emergency", code == 200 and body.get("tier") == 3,
-           f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
+    if groq_budget_down:
+        record_skip("followup: red flag -> tier 3 emergency", "Groq daily token budget exhausted")
+    else:
+        code, body = call(base, token, "POST", "session-followup", {
+            "text": "Now I have severe difficulty breathing and my throat closing is happening, it feels like anaphylaxis",
+            "parentSessionId": sid_worse, "newSessionId": sid_red,
+        })
+        record("followup: red flag -> tier 3 emergency", code == 200 and body.get("tier") == 3,
+               f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
 
     # Paraphrased emergency (contains no stored red-flag keyword): must be
     # caught by the LLM safety-net layer, not the deterministic scan.
-    code, body = call(base, token, "POST", "session-start")
-    sid_para = body.get("sessionId") if isinstance(body, dict) else None
-    code, body = call(base, token, "POST", "session-message", {
-        "text": "the swelling is blocking my airway and I can't get any air",
-        "sessionId": sid_para,
-        "skipClarification": True,
-    })
-    record("paraphrased emergency caught by LLM safety net", code == 200 and body.get("tier") == 3,
-           f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
+    if groq_budget_down:
+        record_skip("paraphrased emergency caught by LLM safety net", "Groq daily token budget exhausted")
+    else:
+        code, body = call(base, token, "POST", "session-start")
+        sid_para = body.get("sessionId") if isinstance(body, dict) else None
+        code, body = call(base, token, "POST", "session-message", {
+            "text": "the swelling is blocking my airway and I can't get any air",
+            "sessionId": sid_para,
+            "skipClarification": True,
+        })
+        record("paraphrased emergency caught by LLM safety net", code == 200 and body.get("tier") == 3,
+               f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}")
 
     # Negation guard: red-flag phrases mentioned in the negative must NOT
     # trigger the emergency path (regression: 'no chest pain' used to trip it).
-    code, body = call(base, token, "POST", "session-start")
-    sid_neg = body.get("sessionId") if isinstance(body, dict) else None
-    code, body = call(base, token, "POST", "session-message", {
-        "text": "I had a scare yesterday but I have no chest pain now, no difficulty breathing, just mild fatigue since this morning",
-        "sessionId": sid_neg,
-        "skipClarification": True,
-    })
-    tier = body.get("tier") if isinstance(body, dict) else None
-    record("negated red flag does not trigger emergency", code == 200 and tier in (1, 2),
-           f"HTTP {code}, tier={tier}")
+    if groq_budget_down:
+        record_skip("negated red flag does not trigger emergency", "Groq daily token budget exhausted")
+    else:
+        code, body = call(base, token, "POST", "session-start")
+        sid_neg = body.get("sessionId") if isinstance(body, dict) else None
+        code, body = call(base, token, "POST", "session-message", {
+            "text": "I had a scare yesterday but I have no chest pain now, no difficulty breathing, just mild fatigue since this morning",
+            "sessionId": sid_neg,
+            "skipClarification": True,
+        })
+        tier = body.get("tier") if isinstance(body, dict) else None
+        record("negated red flag does not trigger emergency", code == 200 and tier in (1, 2),
+               f"HTTP {code}, tier={tier}")
 
     # ── 6. session-image: with caption → vision fusion → full result ──────
     sid_img = str(uuid.uuid4())
     img_b64 = base64.b64encode(IMAGE_FIXTURE.read_bytes()).decode()
-    code, body = call(base, token, "POST", "session-image", {
-        "imageBase64": img_b64,
-        "imageMimeType": "image/webp",
-        "text": "This is my skin, it has been irritated for two days and it is mildly itchy",
-        "sessionId": sid_img,
-    })
-    if isinstance(body, dict) and body.get("needsClarification"):
-        record("session-image (captioned)", True,
-               f"HTTP {code}, needsClarification (valid path): {body.get('clarifyingQuestion', '')[:60]}")
+    if groq_budget_down:
+        record_skip("session-image (captioned)", "Groq daily token budget exhausted")
     else:
-        vf = body.get("visualFindings") if isinstance(body, dict) else None
-        ok = code == 200 and bool(body.get("response")) and vf is not None
-        record("session-image (captioned)", ok,
-               f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}, visualFindings={str(vf)[:60]}")
+        code, body = call(base, token, "POST", "session-image", {
+            "imageBase64": img_b64,
+            "imageMimeType": "image/webp",
+            "text": "This is my skin, it has been irritated for two days and it is mildly itchy",
+            "sessionId": sid_img,
+        })
+        if isinstance(body, dict) and body.get("needsClarification"):
+            record("session-image (captioned)", True,
+                   f"HTTP {code}, needsClarification (valid path): {body.get('clarifyingQuestion', '')[:60]}")
+        else:
+            vf = body.get("visualFindings") if isinstance(body, dict) else None
+            ok = code == 200 and bool(body.get("response")) and vf is not None
+            record("session-image (captioned)", ok,
+                   f"HTTP {code}, tier={body.get('tier') if isinstance(body, dict) else '?'}, visualFindings={str(vf)[:60]}")
 
     # history should show the image turn with a re-signed URL
-    code, body = call(base, token, "GET", f"session-history?sessionId={sid_img}")
-    turns = body.get("turns", []) if isinstance(body, dict) else []
-    img_turns = [t for t in turns if t.get("kind") == "image"]
-    has_url = img_turns and bool(img_turns[0].get("imageUrl"))
-    record("image turn logged with signed URL", code == 200 and bool(img_turns) and has_url,
-           f"HTTP {code}, image turns={len(img_turns)}, signedUrl={'yes' if has_url else 'no'}")
+    if groq_budget_down:
+        record_skip("image turn logged with signed URL", "depends on the captioned image call")
+    else:
+        code, body = call(base, token, "GET", f"session-history?sessionId={sid_img}")
+        turns = body.get("turns", []) if isinstance(body, dict) else []
+        img_turns = [t for t in turns if t.get("kind") == "image"]
+        has_url = img_turns and bool(img_turns[0].get("imageUrl"))
+        record("image turn logged with signed URL", code == 200 and bool(img_turns) and has_url,
+               f"HTTP {code}, image turns={len(img_turns)}, signedUrl={'yes' if has_url else 'no'}")
 
     # ── 7. session-image: no caption → forced clarification ───────────────
     sid_img2 = str(uuid.uuid4())
