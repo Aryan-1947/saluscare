@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -62,54 +63,52 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route
-            path="/login"
-            element={
-              <PublicOnly>
-                <LoginPage />
-              </PublicOnly>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <DashboardPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ask"
-            element={
-              <Protected>
-                <AskPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/sessions"
-            element={
-              <Protected>
-                <SessionsPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/sessions/:sessionId"
-            element={
-              <Protected>
-                <SessionDetailPage />
-              </Protected>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <Protected>
+              <DashboardPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/ask"
+          element={
+            <Protected>
+              <AskPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/sessions"
+          element={
+            <Protected>
+              <SessionsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/sessions/:sessionId"
+          element={
+            <Protected>
+              <SessionDetailPage />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   );
 }
 
