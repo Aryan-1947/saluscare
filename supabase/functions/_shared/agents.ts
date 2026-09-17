@@ -95,17 +95,28 @@ export async function runExplainerAgent(
       `\n\nSpecial case: this complaint has no matching data in the knowledge base at all (empty remedies/foods/warnings). You have web search available — use it to give brief, general, safe self-care guidance for this specific complaint, clearly framed as general information, not personalized medical advice. Still keep it to 2-4 sentences, still end with the required disclaimer sentence, and still never suggest a specific medication dosage.`
     : EXPLAINER_SYSTEM_PROMPT;
 
-  const completion = await groq.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: JSON.stringify(data) },
-    ],
-    temperature: 0.4,
-    max_tokens: needsSearch ? 300 : 200,
-  });
+  // gpt-oss is a reasoning model: reasoning tokens count against max_tokens, so a
+  // tight budget can be exhausted before any content is written (empty string).
+  // reasoning_effort "low" trims thinking; the retry mirrors runGeneralQuestionAgent.
+  const callOnce = async () => {
+    const completion = await groq.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(data) },
+      ],
+      temperature: 0.4,
+      max_tokens: needsSearch ? 600 : 400,
+      reasoning_effort: "low",
+    });
+    return completion.choices[0]?.message?.content ?? "";
+  };
 
-  return completion.choices[0]?.message?.content ?? "";
+  let note = await callOnce();
+  if (!note) {
+    note = await callOnce(); // one retry on empty completion
+  }
+  return note;
 }
 
 
@@ -140,7 +151,8 @@ export async function runFollowupAgent(
       },
     ],
     temperature: 0.3,
-    max_tokens: 130,
+    max_tokens: 400,
+    reasoning_effort: "low",
   });
 
   return completion.choices[0]?.message?.content ?? "";
