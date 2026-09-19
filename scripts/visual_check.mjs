@@ -126,12 +126,14 @@ async function main() {
 
     // Design-layer elements from the healthcare polish pass.
     const design = await page.evaluate(() => ({
-      ecg: !!document.querySelector(".ecg-bright"),
+      medCross: !!document.querySelector(".med-cross"),
+      plusMarks: document.querySelectorAll(".plus-ring").length,
       gradientBorders: document.querySelectorAll(".gradient-border").length,
       eyebrows: document.querySelectorAll(".eyebrow").length,
       displayHeadings: document.querySelectorAll(".font-display").length,
     }));
-    record("ECG heartbeat divider present", design.ecg);
+    record("medical-cross backdrop present", design.medCross);
+    record("hero plus-marker accents", design.plusMarks >= 2, `${design.plusMarks} markers`);
     record(
       "gradient-border panels",
       design.gradientBorders >= 2,
@@ -142,6 +144,27 @@ async function main() {
       "display font applied to headings",
       design.displayHeadings >= 4,
       `${design.displayHeadings} headings`
+    );
+
+    // ── Login card redesign ──
+    await page.goto(`${APP}/login`, { waitUntil: "networkidle2", timeout: 45000 });
+    await sleep(2000);
+    const loginCard = await page.evaluate(() => ({
+      welcome: document.body.innerText.includes("Welcome to Salus Care"),
+      gradientBorder: !!document.querySelector(".gradient-border"),
+      vitals: document.querySelectorAll(".vitals-line").length,
+      glyphs: document.querySelectorAll(".backdrop-blur-md.w-12\\.h-12, [class*='backdrop-blur-md'] svg").length,
+      reassures: ["Triage in under a minute", "Red-flag emergency detection", "Structured clinical knowledge"].filter((t) =>
+        document.body.innerText.includes(t)
+      ).length,
+    }));
+    record("login page renders welcome card", loginCard.welcome);
+    record("login card has gradient border", loginCard.gradientBorder);
+    record("login card vitals shimmer line", loginCard.vitals >= 1);
+    record(
+      "login reassurance strip complete",
+      loginCard.reassures === 3,
+      `${loginCard.reassures}/3 items`
     );
 
     record(

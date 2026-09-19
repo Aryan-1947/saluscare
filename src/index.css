@@ -100,17 +100,75 @@ body {
   border-radius: 15px;
 }
 
-/* ECG heartbeat divider — a bright pulse sweeping along a faint trace.
-   The bright path uses SVG pathLength=1600 so dash math stays normalized. */
-@keyframes ecg-sweep {
-  from { stroke-dashoffset: 1600; }
-  to { stroke-dashoffset: 0; }
+/* Faint medical cross lattice used as section backdrop (landing stats) */
+.med-cross {
+  background-image:
+    linear-gradient(rgba(14, 165, 164, 0.09) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(14, 165, 164, 0.09) 1.5px, transparent 1.5px);
+  background-size: 44px 44px;
 }
 
-.ecg-bright {
-  stroke-dasharray: 140 1460;
-  animation: ecg-sweep 5s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(14, 165, 164, 0.65));
+.dark .med-cross {
+  background-image:
+    linear-gradient(rgba(14, 165, 164, 0.07) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(14, 165, 164, 0.07) 1.5px, transparent 1.5px);
+}
+
+/* Plus-shaped markers for the hero's lateral accents */
+.plus-ring {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.plus-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: rgba(14, 165, 164, 0.35);
+  clip-path: polygon(
+    35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%,
+    65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%
+  );
+}
+
+.plus-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: rgba(14, 165, 164, 0.5);
+  clip-path: polygon(
+    35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%,
+    65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%
+  );
+  animation: pulse-ring 2.6s ease-out infinite;
+}
+
+/* Slow shimmer traveling along the login card's trust divider */
+@keyframes vitals-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.vitals-line {
+  position: relative;
+  overflow: hidden;
+  height: 1px;
+  border-radius: 1px;
+  background: rgba(14, 165, 164, 0.18);
+}
+
+.vitals-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 1px;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 164, 0.8), transparent);
+  animation: vitals-sweep 4s ease-in-out infinite;
 }
 
 /* Light sheen sweeping across primary buttons on hover */
@@ -192,10 +250,11 @@ body {
 
 /* Infinite CSS loops must stop for reduced-motion users */
 @media (prefers-reduced-motion: reduce) {
-  .ecg-bright,
   .animate-gradient,
   .animate-float,
-  .gradient-border {
+  .gradient-border,
+  .plus-ring::after,
+  .vitals-line::after {
     animation: none;
   }
 }

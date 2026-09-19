@@ -255,34 +255,24 @@ export function LandingPage() {
           ))}
         </motion.div>
 
-        {/* ECG heartbeat divider — a pulse sweeping along a faint trace */}
+        {/* Medical plus-marker accents flanking the hero */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.7 }}
-          className="mt-12 max-w-xl mx-auto"
+          className="mt-14 flex items-center justify-center gap-6"
           aria-hidden="true"
         >
-          <svg viewBox="0 0 800 60" fill="none" className="w-full h-12">
-            <path
-              d="M0 30 L150 30 L172 30 L184 12 L198 48 L210 4 L224 54 L238 20 L250 36 L262 30 L400 30 L422 30 L434 12 L448 48 L460 4 L474 54 L488 20 L500 36 L512 30 L650 30 L672 30 L684 12 L698 48 L710 4 L724 54 L738 20 L750 36 L762 30 L800 30"
-              stroke="rgba(14,165,164,0.18)"
-              strokeWidth="1.5"
-            />
-            <path
-              className="ecg-bright"
-              d="M0 30 L150 30 L172 30 L184 12 L198 48 L210 4 L224 54 L238 20 L250 36 L262 30 L400 30 L422 30 L434 12 L448 48 L460 4 L474 54 L488 20 L500 36 L512 30 L650 30 L672 30 L684 12 L698 48 L710 4 L724 54 L738 20 L750 36 L762 30 L800 30"
-              stroke="#0EA5A4"
-              strokeWidth="2"
-              strokeLinecap="round"
-              pathLength={1600}
-            />
-          </svg>
+          <span className="plus-ring" />
+          <span className="w-16 h-px bg-gradient-to-r from-transparent via-[#0EA5A4]/40 to-transparent" />
+          <span className="plus-ring" />
         </motion.div>
       </motion.section>
 
-      {/* Stats bar — lifted cards overlapping the hero */}
-      <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pb-16 md:pb-20">
+      {/* Stats bar — lifted cards over a faint medical-cross lattice */}
+      <section className="relative z-10 pb-16 md:pb-20">
+        <div className="absolute inset-0 -z-10 med-cross opacity-70 [mask-image:radial-gradient(ellipse_70%_80%_at_50%_40%,black,transparent)]" />
+        <div className="relative max-w-4xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
             <motion.div
@@ -301,6 +291,7 @@ export function LandingPage() {
               <span className="text-xs text-[#64748B] dark:text-neutral-400 mt-1">{stat.label}</span>
             </motion.div>
           ))}
+        </div>
         </div>
       </section>
 
