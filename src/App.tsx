@@ -8,7 +8,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Code-split: each route loads its own chunk on demand
 const LandingPage = lazy(() => import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
-const DashboardPage = lazy(() => import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const AskPage = lazy(() => import("@/pages/AskPage").then((m) => ({ default: m.AskPage })));
 const SessionsPage = lazy(() => import("@/pages/SessionsPage").then((m) => ({ default: m.SessionsPage })));
 const SessionDetailPage = lazy(() =>
@@ -63,7 +62,7 @@ function PublicOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth0();
 
   if (isLoading) return <PageLoader />;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) return <Navigate to="/ask" replace />;
 
   return <>{children}</>;
 }
@@ -80,16 +79,6 @@ function App() {
               <PublicOnly>
                 <LoginPage />
               </PublicOnly>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <LazyPage>
-                  <DashboardPage />
-                </LazyPage>
-              </Protected>
             }
           />
           <Route

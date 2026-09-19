@@ -22,7 +22,7 @@ export function AppAuth0Provider({ children }: { children: ReactNode }) {
       // IMPORTANT: never window.location.replace() here — a full reload wipes the
       // in-memory token cache and sends the user back to the login screen.
       onRedirectCallback={(appState) => {
-        navigate(appState?.returnTo ?? "/dashboard", { replace: true });
+        navigate(appState?.returnTo ?? "/ask", { replace: true });
       }}
       // Refresh tokens + localStorage let the session survive full page reloads
       // without hidden-iframe silent auth, which modern browsers block

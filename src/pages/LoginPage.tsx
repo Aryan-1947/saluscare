@@ -8,7 +8,7 @@ export function LoginPage() {
   const location = useLocation();
 
   // The page the user originally tried to visit (set by the Protected route guard)
-  const returnTo = (location.state as { from?: string } | null)?.from ?? "/dashboard";
+  const returnTo = (location.state as { from?: string } | null)?.from ?? "/ask";
 
   const handleLogin = () => {
     loginWithRedirect({ appState: { returnTo } });

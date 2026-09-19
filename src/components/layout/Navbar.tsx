@@ -11,7 +11,6 @@ import {
   Menu,
   X,
   LogOut,
-  LayoutDashboard,
   ChevronDown,
   User,
 } from "lucide-react";
@@ -19,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
 
 const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/ask", icon: MessageSquareText, label: "Ask" },
   { to: "/sessions", icon: History, label: "Sessions" },
 ];
@@ -155,16 +153,6 @@ export function Navbar() {
 
                     {/* Menu items */}
                     <div className="py-1.5">
-                      <button
-                        onClick={() => {
-                          navigate("/dashboard");
-                          closeMenu();
-                        }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#0F172A] dark:text-neutral-200 hover:bg-[#F8FAFC] dark:hover:bg-white/[0.05] transition-colors"
-                      >
-                        <LayoutDashboard size={15} className="text-[#64748B] dark:text-neutral-400" />
-                        Dashboard
-                      </button>
                       <button
                         onClick={toggle}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#0F172A] dark:text-neutral-200 hover:bg-[#F8FAFC] dark:hover:bg-white/[0.05] transition-colors"
