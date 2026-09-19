@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "typecheck": "tsc -p tsconfig.ci.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },
