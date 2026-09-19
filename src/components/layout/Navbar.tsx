@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,6 +38,11 @@ export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth0();
   const { isDark, toggle } = useThemeStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  // The landing page stays minimal: no app nav links there, just the brand,
+  // theme toggle and Sign In / account menu. App links appear only inside
+  // the app (under /ask, /sessions, ...).
+  const onLanding = location.pathname === "/";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -59,7 +64,7 @@ export function Navbar() {
           </span>
         </button>
 
-        {isAuthenticated && (
+        {isAuthenticated && !onLanding && (
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <NavLink
@@ -203,6 +208,7 @@ export function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-[#E2E8F0] dark:border-white/[0.06] px-4 py-3 flex flex-col gap-1">
           {isAuthenticated &&
+            !onLanding &&
             navItems.map((item) => (
               <NavLink
                 key={item.to}

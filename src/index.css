@@ -122,12 +122,3 @@ body {
   opacity: 1;
 }
 
-/* Faint dot grid used behind the hero */
-.bg-dots {
-  background-image: radial-gradient(rgba(15, 23, 42, 0.16) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-.dark .bg-dots {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-}

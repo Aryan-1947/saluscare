@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Visual check for the landing page polish (no backend / no login needed):
- * drives headless Chrome against the dev server and asserts the new effects
- * are present in the DOM — dot grid, spotlight cards, count-up stats,
- * animated gradient headline. Exits non-zero on failure.
+ * drives headless Chrome against the dev server and asserts the effects
+ * are present in the DOM — spotlight cards, count-up stats, animated
+ * gradient headline — and that the navbar hides app links on the landing
+ * page. Exits non-zero on failure.
  *
  * Usage: node scripts/visual_check.mjs [baseUrl]
  */
@@ -50,16 +51,14 @@ async function main() {
       return {
         found: !!span,
         shimmer: span?.classList.contains("animate-gradient") ?? false,
-        dots: !!document.querySelector(".bg-dots"),
       };
     });
     record("hero headline uses animated gradient", hero.found && hero.shimmer);
-    record("hero dot-grid backdrop present", hero.dots);
 
     const spotlights = await page.evaluate(
       () => document.querySelectorAll(".spotlight-card").length
     );
-    record("spotlight cards mounted", spotlights >= 9, `${spotlights} cards`);
+    record("spotlight cards mounted", spotlights >= 6, `${spotlights} cards`);
 
     // Hover the first feature card and confirm the spotlight fades in.
     // The card lives below the fold, so scroll it into view first — hovering
@@ -107,6 +106,23 @@ async function main() {
       counted.includes("<60s") && counted.includes("3-Tier") && counted.includes("24/7"),
       `values=${counted.join(", ")}`
     );
+
+    // Navbar on the landing page must stay minimal: no app nav links.
+    const navState = await page.evaluate(() => {
+      const links = [...document.querySelectorAll("header nav a")].map((a) =>
+        a.textContent?.trim()
+      );
+      const signIn = [...document.querySelectorAll("header button")].some((b) =>
+        b.textContent?.includes("Sign In")
+      );
+      return { links, signIn };
+    });
+    record(
+      "landing navbar has no Ask/Sessions links",
+      !navState.links.some((l) => l === "Ask" || l === "Sessions"),
+      navState.links.length ? `links=${navState.links.join(", ")}` : "no nav links"
+    );
+    record("landing navbar shows Sign In", navState.signIn);
 
     record(
       "no unexpected JS errors",

@@ -2,7 +2,6 @@ import {
   motion,
   useScroll,
   useTransform,
-  AnimatePresence,
   MotionConfig,
   useInView,
   animate,
@@ -23,12 +22,9 @@ import {
   Zap,
   Clock,
   Heart,
-  ChevronDown,
   Lock,
   EyeOff,
   Trash2,
-  Quote,
-  Star,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -121,84 +117,10 @@ function AnimatedCounter({ stat, delay }: { stat: Stat; delay: number }) {
   );
 }
 
-const faqs = [
-  {
-    q: "Is Salus Care a replacement for a doctor?",
-    a: "No. Salus Care provides educational health information to help you understand your symptoms and choose a safe next step. It never diagnoses, prescribes, or replaces professional medical care.",
-  },
-  {
-    q: "How does the triage actually work?",
-    a: "Your description (and photo, if you add one) is checked against emergency red-flag patterns first. If nothing urgent matches, the system extracts structured symptom data and reasons through it like a triage nurse would, mapping you to self-care guidance or a specialist referral.",
-  },
-  {
-    q: "What happens if my symptoms are serious?",
-    a: "Red-flag symptoms are detected before anything else runs. You're shown emergency guidance immediately — the assessment ends there and directs you to seek immediate care.",
-  },
-  {
-    q: "Do you store my conversations?",
-    a: "Sessions are kept so you can follow up and review your history, and they're visible only to you. We still recommend not submitting highly sensitive personal or medical information.",
-  },
-  {
-    q: "Can I describe symptoms with a photo?",
-    a: "Yes — attach a photo of a visible symptom like a rash, cut, or reaction. It's analysed together with your written description, and you may be asked a clarifying question first.",
-  },
-  {
-    q: "Is it really free?",
-    a: "Yes. Salus Care is free to use, with no account fees or paywalled features.",
-  },
-];
-
-const testimonials = [
-  {
-    quote: "I described symptoms late at night and got clear, calm guidance in under a minute. It told me exactly what to watch for overnight.",
-    name: "Priya S.",
-    role: "Parent of two",
-  },
-  {
-    quote: "The follow-up feature is what sets it apart. I reported how I was feeling two days later and it reassessed instead of starting over.",
-    name: "Marcus T.",
-    role: "Marathon runner",
-  },
-  {
-    quote: "It didn't guess. It asked me two sensible questions, then recommended the right specialist and what to do while I waited.",
-    name: "Elena R.",
-    role: "Graduate student",
-  },
-];
-
-function FaqItem({ faq, open, onToggle }: { faq: (typeof faqs)[number]; open: boolean; onToggle: () => void }) {
-  return (
-    <div className="rounded-[12px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
-      >
-        <span className="text-sm font-semibold text-[#0F172A] dark:text-white">{faq.q}</span>
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
-          <ChevronDown size={16} className="text-[#64748B] dark:text-neutral-400" />
-        </motion.span>
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-          >
-            <p className="px-5 pb-4 text-sm text-[#64748B] dark:text-neutral-400 leading-relaxed">{faq.a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth0();
   const heroRef = useRef<HTMLDivElement>(null);
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -242,8 +164,7 @@ export function LandingPage() {
         style={{ opacity: heroOpacity, scale: heroScale }}
         className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pt-20 md:pt-28 pb-16 md:pb-24 text-center"
       >
-        {/* Backdrop: faint dot grid + breathing teal glow */}
-        <div className="absolute inset-0 -z-10 bg-dots opacity-60 [mask-image:radial-gradient(ellipse_60%_60%_at_50%_35%,black,transparent)]" />
+        {/* Backdrop: breathing teal glow */}
         <div className="absolute left-1/2 top-24 -z-10 -translate-x-1/2">
           <motion.div
             animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.08, 1] }}
@@ -435,56 +356,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10"
-        >
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">People rely on it when it matters</h2>
-          <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-md mx-auto">
-            Real moments where a fast, calm second opinion made the difference.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {testimonials.map((t, i) => (
-            <motion.figure
-              key={t.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              onMouseMove={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                e.currentTarget.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
-                e.currentTarget.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
-              }}
-              className="spotlight-card rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 flex flex-col shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]"
-            >
-              <Quote size={18} className="text-[#0EA5A4]/60 mb-3" />
-              <blockquote className="text-sm text-[#0F172A] dark:text-neutral-200 leading-relaxed flex-1">
-                "{t.quote}"
-              </blockquote>
-              <figcaption className="mt-5 pt-4 border-t border-[#E2E8F0] dark:border-white/[0.06] flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-[#0F172A] dark:text-white">{t.name}</p>
-                  <p className="text-xs text-[#64748B] dark:text-neutral-500">{t.role}</p>
-                </div>
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, s) => (
-                    <Star key={s} size={12} className="fill-[#F59E0B] text-[#F59E0B]" />
-                  ))}
-                </div>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
-      </section>
-
       {/* Privacy & security */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
         <motion.div
@@ -539,32 +410,6 @@ export function LandingPage() {
             ))}
           </div>
         </motion.div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="relative z-10 max-w-3xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-10"
-        >
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">Frequently asked questions</h2>
-          <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-md mx-auto">
-            Everything you might be wondering about, answered plainly.
-          </p>
-        </motion.div>
-
-        <div className="flex flex-col gap-3">
-          {faqs.map((faq, i) => (
-            <FaqItem
-              key={faq.q}
-              faq={faq}
-              open={openFaq === i}
-              onToggle={() => setOpenFaq(openFaq === i ? null : i)}
-            />
-          ))}
-        </div>
       </section>
 
       {/* Footer CTA */}
