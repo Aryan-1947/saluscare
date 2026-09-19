@@ -35,14 +35,14 @@ async function callFunction<T>(
 /**
  * Downscale an image file client-side before upload.
  *
- * Motivation: a modern phone photo is 3–12 MB; base64-encoded that's ~4–16 MB
+ * Motivation: a modern phone photo is 3-12 MB; base64-encoded that's ~4-16 MB
  * of JSON, which overflows the Supabase Edge Function request body limit and
  * gets every large upload rejected with a cryptic 500.
  *
  * Strategy: draw the image into a canvas at a bounded max edge (default
- * 1568px — sufficient detail for rashes, wounds and other visual symptoms)
+ * 1568px - sufficient detail for rashes, wounds and other visual symptoms)
  * and re-encode as JPEG at quality 0.82. Re-encoding any input (including
- * PNG/WebP) as JPEG typically shrinks a photo by 5–20x; the output rarely
+ * PNG/WebP) as JPEG typically shrinks a photo by 5-20x; the output rarely
  * exceeds ~400 KB.
  *
  * EXIF orientation: createImageBitmap respects it via the `imageOrientation`
@@ -50,7 +50,7 @@ async function callFunction<T>(
  * default orientation handling. Either way pixels land upright on the canvas.
  *
  * Returns the original file untouched if it's already small enough, can't be
- * decoded, or the canvas path is unavailable — upload failures then fall
+ * decoded, or the canvas path is unavailable - upload failures then fall
  * through to existing error handling.
  */
 export async function prepareImageForUpload(
@@ -58,7 +58,7 @@ export async function prepareImageForUpload(
   maxEdge = 1568,
   quality = 0.82
 ): Promise<{ base64: string; mimeType: string }> {
-  const SMALL_ENOUGH = 300 * 1024; // bytes — below this, send as-is
+  const SMALL_ENOUGH = 300 * 1024; // bytes - below this, send as-is
 
   if (file.size <= SMALL_ENOUGH) {
     return { base64: await fileToBase64(file), mimeType: file.type || "image/jpeg" };
@@ -84,7 +84,7 @@ export async function prepareImageForUpload(
 
     return { base64, mimeType: "image/jpeg" };
   } catch {
-    // Canvas/bitmap path failed — degrade gracefully to the original bytes.
+    // Canvas/bitmap path failed - degrade gracefully to the original bytes.
     return { base64: await fileToBase64(file), mimeType: file.type || "image/jpeg" };
   }
 }

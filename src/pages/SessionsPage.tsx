@@ -43,7 +43,7 @@ export function SessionsPage() {
 
   const [rows, setRows] = useState<SessionRow[]>([]);
   // Lazy init: if there are no logged sessions at mount, skip the loading
-  // state entirely (nothing to fetch — show the empty state immediately).
+  // state entirely (nothing to fetch - show the empty state immediately).
   const [loading, setLoading] = useState(() => {
     const stored = localStorage.getItem(`salus-sessions:${user?.sub ?? ""}`);
     const parsed = stored ? (JSON.parse(stored) as unknown[]) : [];
@@ -72,7 +72,7 @@ export function SessionsPage() {
     let cancelled = false;
 
     // ONE batched request for all logged roots (previously one history call
-    // per session — N+1, each pulling full turns + re-signing image URLs,
+    // per session - N+1, each pulling full turns + re-signing image URLs,
     // which made the list render progressively over seconds).
     getSummaries(logged.map((s) => s.sessionId))
       .then((res) => {

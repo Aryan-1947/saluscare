@@ -19,14 +19,14 @@ export function AppAuth0Provider({ children }: { children: ReactNode }) {
         audience: audience,
       }}
       // Client-side navigation back to the page the user originally requested.
-      // IMPORTANT: never window.location.replace() here — a full reload wipes the
+      // IMPORTANT: never window.location.replace() here - a full reload wipes the
       // in-memory token cache and sends the user back to the login screen.
       onRedirectCallback={(appState) => {
         navigate(appState?.returnTo ?? "/ask", { replace: true });
       }}
       // Refresh tokens + localStorage let the session survive full page reloads
       // without hidden-iframe silent auth, which modern browsers block
-      // (third-party cookie deprecation) — the usual cause of login loops.
+      // (third-party cookie deprecation) - the usual cause of login loops.
       useRefreshTokens
       cacheLocation="localstorage"
     >

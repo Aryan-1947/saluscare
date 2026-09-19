@@ -227,20 +227,20 @@ export function AskPage() {
   };
 
   return (
-    <div className="relative flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[#F8FAFC] dark:bg-[#0B0F19]">
+    <div className="relative flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[#EEF2F7] dark:bg-[#0B0F19]">
       <EcgMonitor tier={lastResultTurn?.content.tier ?? 1} />
 
       {/* Connected glass chat card */}
       <div className="relative z-10 flex flex-col flex-1 max-w-4xl w-full mx-auto px-4 md:px-8 py-4 min-h-0">
-        <div className="flex flex-col flex-1 bg-white/35 dark:bg-[#151B2C]/30 backdrop-blur-xl rounded-[16px] border border-white/30 dark:border-white/[0.06] overflow-hidden min-h-0">
+        <div className="flex flex-col flex-1 bg-white/60 dark:bg-[#151B2C]/40 backdrop-blur-xl rounded-[16px] border border-[#D8E0EA] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.07)] overflow-hidden min-h-0">
           {/* Scrollable messages area */}
           <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {turns.length === 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-10 text-center">
-                <div className="w-14 h-14 rounded-[14px] bg-[#0EA5A4]/10 flex items-center justify-center mx-auto mb-5">
-                  <MessageSquareText size={24} className="text-[#0EA5A4]" />
+                <div className="w-16 h-16 rounded-[16px] bg-gradient-to-br from-[#0EA5A4]/20 to-[#06B6B4]/10 ring-1 ring-[#0EA5A4]/20 shadow-[0_8px_24px_rgba(14,165,164,0.18)] flex items-center justify-center mx-auto mb-5">
+                  <MessageSquareText size={26} className="text-[#0EA5A4]" />
                 </div>
-                <h1 className="text-2xl font-semibold text-[#0F172A] dark:text-white mb-2">
+                <h1 className="font-display text-2xl font-semibold text-[#0F172A] dark:text-white mb-2">
                   Describe what you're experiencing.
                 </h1>
                 <p className="text-sm text-[#64748B] dark:text-neutral-400 max-w-md mx-auto">
@@ -346,7 +346,7 @@ export function AskPage() {
 
             {hasEmergency && (
               <p className="text-xs text-center text-[#DC2626] font-medium mt-4">
-                An emergency was flagged above — this assessment has ended. Please seek immediate care.
+                An emergency was flagged above - this assessment has ended. Please seek immediate care.
               </p>
             )}
 
@@ -359,7 +359,7 @@ export function AskPage() {
             )}
           </div>
 
-          {/* Input bar — connected to the same card */}
+          {/* Input bar - connected to the same card */}
           <div className="border-t border-white/40 dark:border-white/[0.08] p-3">
             {imagePreview && (
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative inline-block mb-2 px-1">
@@ -389,7 +389,7 @@ export function AskPage() {
                   loading
                     ? ""
                     : hasEmergency
-                    ? "This assessment has ended — please seek immediate care"
+                    ? "This assessment has ended. Please seek immediate care"
                     : lastResultTurn
                     ? "How are things now? Better, worse, new symptoms..."
                     : "e.g. I've had a sore throat for 2 days and now a mild fever..."

@@ -45,7 +45,7 @@ export function LoginPage() {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19] px-4 overflow-hidden">
-      {/* Ambient background — aurora mesh */}
+      {/* Ambient background - aurora mesh */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div animate={{ x: [0, 30, -20, 0], y: [0, -20, 10, 0] }} transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full opacity-[0.08]" style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }} />
         <motion.div animate={{ x: [0, -20, 30, 0], y: [0, 20, -10, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-0 -left-40 w-[400px] h-[400px] rounded-full opacity-[0.06]" style={{ background: "radial-gradient(circle, #0F172A, transparent 70%)" }} />
@@ -82,7 +82,7 @@ export function LoginPage() {
         className="relative z-10 w-full max-w-sm gradient-border shadow-[0_24px_70px_rgba(15,23,42,0.14),0_8px_24px_rgba(15,23,42,0.08)]"
       >
         <div className="bg-white/90 dark:bg-[#151B2C]/90 backdrop-blur-xl p-8">
-          {/* Logo — gradient tile inside a teal halo */}
+          {/* Logo - gradient tile inside a teal halo */}
           <div className="relative w-[72px] h-[72px] mx-auto mb-5">
             <div className="absolute inset-[-8px] rounded-full bg-[#0EA5A4]/10 blur-md" />
             <div className="absolute inset-[-5px] rounded-full bg-gradient-to-br from-[#0EA5A4]/50 via-transparent to-[#06B6B4]/50" />
@@ -99,7 +99,7 @@ export function LoginPage() {
             Sign in to start your health assessment. Your conversations are private and only visible to you.
           </p>
 
-          {/* What you get — quiet reassurance strip */}
+          {/* What you get - quiet reassurance strip */}
           <div className="flex flex-col gap-1.5 mb-5 rounded-[10px] bg-[#F8FAFC]/80 dark:bg-white/[0.03] border border-[#E2E8F0]/60 dark:border-white/[0.05] px-3.5 py-3">
             {reassurances.map((r) => (
               <div key={r.text} className="flex items-center gap-2.5 text-xs text-[#64748B] dark:text-neutral-400">

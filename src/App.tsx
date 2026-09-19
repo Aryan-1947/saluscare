@@ -23,7 +23,7 @@ function PageLoader() {
 }
 
 // Wraps a lazy route so a failed chunk load shows a recoverable "new version
-// available — reload" fallback instead of an infinite spinner.
+// available - reload" fallback instead of an infinite spinner.
 function LazyPage({ children }: { children: React.ReactNode }) {
   return <ErrorBoundary>{children}</ErrorBoundary>;
 }

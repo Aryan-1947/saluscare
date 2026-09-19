@@ -41,7 +41,7 @@ const features = [
     icon: ImagePlus,
     title: "Image Analysis",
     description:
-      "Share a photo of a visible symptom — a rash, a cut, a reaction — and get an informed assessment combined with your description.",
+      "Share a photo of a visible symptom - a rash, a cut, a reaction - and get an informed assessment combined with your description.",
     tile: "bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/15",
   },
   {
@@ -141,25 +141,25 @@ export function LandingPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-white transition-colors">
-      {/* Ambient background — gradient mesh, ultra-slow drift */}
+    <div className="min-h-screen bg-[#EEF2F7] dark:bg-[#0B0F19] text-[#0F172A] dark:text-white transition-colors">
+      {/* Ambient background - gradient mesh, ultra-slow drift */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <motion.div
           animate={{ x: [0, 50, -30, 0], y: [0, -40, 25, 0] }}
           transition={{ duration: 60, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-32 -right-20 w-[700px] h-[700px] rounded-full opacity-[0.18] dark:opacity-[0.22] blur-3xl"
+          className="absolute -top-32 -right-20 w-[700px] h-[700px] rounded-full opacity-[0.3] dark:opacity-[0.22] blur-3xl"
           style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
         />
         <motion.div
           animate={{ x: [0, -40, 30, 0], y: [0, 30, -25, 0] }}
           transition={{ duration: 75, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[30%] -left-32 w-[600px] h-[600px] rounded-full opacity-[0.12] dark:opacity-[0.16] blur-3xl"
+          className="absolute top-[30%] -left-32 w-[600px] h-[600px] rounded-full opacity-[0.2] dark:opacity-[0.16] blur-3xl"
           style={{ background: "radial-gradient(circle, #0F172A, transparent 70%)" }}
         />
         <motion.div
           animate={{ x: [0, 35, -45, 0], y: [0, 25, -30, 0] }}
           transition={{ duration: 50, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full opacity-[0.1] dark:opacity-[0.14] blur-3xl"
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full opacity-[0.18] dark:opacity-[0.14] blur-3xl"
           style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
         />
       </div>
@@ -172,15 +172,33 @@ export function LandingPage() {
         style={{ opacity: heroOpacity, scale: heroScale }}
         className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pt-20 md:pt-28 pb-16 md:pb-24 text-center"
       >
-        {/* Backdrop: breathing teal glow */}
+        {/* Backdrop: plus-sign lattice + breathing teal glow */}
+        <div className="absolute inset-0 -z-10 med-cross [mask-image:radial-gradient(ellipse_65%_65%_at_50%_30%,black,transparent)]" />
         <div className="absolute left-1/2 top-24 -z-10 -translate-x-1/2">
           <motion.div
             animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.08, 1] }}
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
             className="h-[420px] w-[620px] rounded-full blur-3xl"
-            style={{ background: "radial-gradient(circle, rgba(14,165,164,0.2), transparent 70%)" }}
+            style={{ background: "radial-gradient(circle, rgba(14,165,164,0.32), transparent 70%)" }}
           />
         </div>
+        {/* Scattered plus marks drifting at the hero's edges */}
+        {[
+          { style: { left: "8%", top: "18%" }, dur: 7 },
+          { style: { right: "10%", top: "30%" }, dur: 8.5 },
+          { style: { left: "16%", bottom: "22%" }, dur: 9.5 },
+          { style: { right: "16%", bottom: "14%" }, dur: 7.8, sm: true },
+          { style: { left: "45%", top: "8%" }, dur: 8.2, sm: true },
+        ].map((p, i) => (
+          <motion.span
+            key={i}
+            aria-hidden="true"
+            animate={{ y: [0, -9, 0], opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: p.dur, repeat: Infinity, ease: "easeInOut", delay: i * 0.7 }}
+            className="plus-mark hidden md:block"
+            style={p.style}
+          />
+        ))}
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -209,7 +227,7 @@ export function LandingPage() {
           className="mt-6 text-lg md:text-xl text-[#64748B] dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed"
         >
           Describe your symptoms, share a photo, and get a clinically-grounded
-          assessment — routed safely to self-care, a specialist, or emergency care.
+          assessment - routed safely to self-care, a specialist, or emergency care.
         </motion.p>
 
         <motion.div
@@ -269,7 +287,7 @@ export function LandingPage() {
         </motion.div>
       </motion.section>
 
-      {/* Stats bar — lifted cards over a faint medical-cross lattice */}
+      {/* Stats bar - lifted cards over a faint medical-cross lattice */}
       <section className="relative z-10 pb-16 md:pb-20">
         <div className="absolute inset-0 -z-10 med-cross opacity-70 [mask-image:radial-gradient(ellipse_70%_80%_at_50%_40%,black,transparent)]" />
         <div className="relative max-w-4xl mx-auto px-4 md:px-8">
@@ -314,7 +332,7 @@ export function LandingPage() {
           {[
             { step: "01", title: "Describe your symptoms", desc: "Tell us what you're experiencing in your own words, or share a photo." },
             { step: "02", title: "Get a safe assessment", desc: "Our system checks for emergencies first, then reasons through your symptoms." },
-            { step: "03", title: "Follow the right path", desc: "Self-care guidance, a specialist referral, or emergency direction — clearly explained." },
+            { step: "03", title: "Follow the right path", desc: "Self-care guidance, a specialist referral, or emergency direction - clearly explained." },
           ].map((item, i) => (
             <motion.div
               key={item.step}
@@ -350,13 +368,15 @@ export function LandingPage() {
           <div className="eyebrow mb-4">Features</div>
           <h2 className="font-display text-2xl md:text-3xl font-bold mb-3">What you get</h2>
           <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-md mx-auto">
-            Everything you need for safe, informed health decisions — all in one place.
+            Everything you need for safe, informed health decisions - all in one place.
           </p>
         </motion.div>
       </div>
 
-      {/* Features grid */}
-      <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
+      {/* Features grid - over the medical plus lattice */}
+      <section className="relative z-10 pb-16 md:pb-24">
+        <div className="absolute inset-0 -z-10 med-cross [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)]" />
+        <div className="relative max-w-6xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature, i) => (
             <motion.div
@@ -382,6 +402,7 @@ export function LandingPage() {
               </p>
             </motion.div>
           ))}
+        </div>
         </div>
       </section>
 
@@ -417,7 +438,7 @@ export function LandingPage() {
               {
                 icon: Trash2,
                 title: "You're in control",
-                desc: "Keep only what helps you — sessions exist so follow-ups work, and nothing more.",
+                desc: "Keep only what helps you - sessions exist so follow-ups work, and nothing more.",
               },
             ].map((item, i) => (
               <motion.div

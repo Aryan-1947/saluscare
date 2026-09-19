@@ -200,7 +200,7 @@ export function SessionDetailPage() {
 
             {hasEmergency && (
               <p className="text-xs text-center text-[#DC2626] font-medium mt-4">
-                An emergency was flagged in this session — it has ended. Please seek immediate care.
+                An emergency was flagged in this session - it has ended. Please seek immediate care.
               </p>
             )}
 
