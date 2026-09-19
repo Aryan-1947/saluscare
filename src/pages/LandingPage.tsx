@@ -19,12 +19,13 @@ import {
   ShieldCheck,
   Siren,
   ArrowRight,
-  Zap,
-  Clock,
+  Activity,
+  ClipboardCheck,
   Heart,
   Lock,
   EyeOff,
   Trash2,
+  ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -34,36 +35,42 @@ const features = [
     title: "AI Symptom Analysis",
     description:
       "Describe what you're feeling in your own words. Our system extracts structured symptom data and reasons through it like a triage nurse would.",
+    tile: "bg-[#0EA5A4]/10 text-[#0EA5A4] group-hover:bg-[#0EA5A4]/15",
   },
   {
     icon: ImagePlus,
     title: "Image Analysis",
     description:
       "Share a photo of a visible symptom — a rash, a cut, a reaction — and get an informed assessment combined with your description.",
+    tile: "bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/15",
   },
   {
     icon: History,
     title: "Follow-up Care",
     description:
       "Symptoms change. Come back anytime to report how you're doing, and we'll reassess against your prior visit, not start from scratch.",
+    tile: "bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/15",
   },
   {
     icon: ShieldCheck,
     title: "Safety-First Approach",
     description:
       "Every response is grounded in structured medical guidance, never invented. Uncertain cases are escalated, not guessed at.",
+    tile: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/15",
   },
   {
     icon: Siren,
     title: "Emergency Routing",
     description:
       "Red-flag symptoms are detected before anything else runs, routing you to emergency guidance immediately, no delay.",
+    tile: "bg-red-500/10 text-red-500 group-hover:bg-red-500/15",
   },
   {
     icon: Stethoscope,
     title: "Specialist Referral",
     description:
       "When your symptoms call for professional care, we tell you exactly which specialist to see and why, with safe interim steps.",
+    tile: "bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-500/15",
   },
 ];
 
@@ -74,13 +81,14 @@ type Stat = {
   suffix?: string;
   staticValue?: string;
   label: string;
+  tile: string;
 };
 
 const stats: Stat[] = [
-  { icon: Zap, value: 60, prefix: "<", suffix: "s", label: "Assessment Time" },
-  { icon: ShieldCheck, value: 3, suffix: "-Tier", label: "Safety System" },
-  { icon: Clock, value: 24, suffix: "/7", label: "Always Available" },
-  { icon: Heart, value: null, staticValue: "Free", label: "No Cost" },
+  { icon: Activity, value: 60, prefix: "<", suffix: "s", label: "Average assessment", tile: "bg-[#0EA5A4]/10 text-[#0EA5A4]" },
+  { icon: ClipboardCheck, value: 3, suffix: "-Tier", label: "Safety system", tile: "bg-violet-500/10 text-violet-500" },
+  { icon: Siren, value: null, staticValue: "24/7", label: "Emergency ready", tile: "bg-red-500/10 text-red-500" },
+  { icon: Heart, value: null, staticValue: "Free", label: "No cost, ever", tile: "bg-rose-500/10 text-rose-500" },
 ];
 
 // Counts 0 -> target the first time the stat scrolls into view. Static
@@ -178,17 +186,17 @@ export function LandingPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0EA5A4]/10 border border-[#0EA5A4]/20 text-[#0EA5A4] text-xs font-medium mb-6"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-[#0EA5A4]/25 text-[#0EA5A4] text-xs font-semibold tracking-wide shadow-[0_2px_12px_rgba(14,165,164,0.12)] mb-7"
         >
           <span className="relative w-1.5 h-1.5 rounded-full bg-[#0EA5A4] pulse-ring" />
-          AI-Powered Health Triage
+          AI-POWERED HEALTH TRIAGE
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1]"
+          className="font-display text-4xl md:text-6xl lg:text-[68px] font-extrabold tracking-tight leading-[1.05]"
         >
           Your intelligent guide to{" "}
           <span className="gradient-text animate-gradient">safer healthcare decisions.</span>
@@ -198,7 +206,7 @@ export function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-          className="mt-6 text-lg md:text-xl text-[#64748B] max-w-2xl mx-auto leading-relaxed"
+          className="mt-6 text-lg md:text-xl text-[#64748B] dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed"
         >
           Describe your symptoms, share a photo, and get a clinically-grounded
           assessment — routed safely to self-care, a specialist, or emergency care.
@@ -212,7 +220,7 @@ export function LandingPage() {
         >
           <button
             onClick={goToApp}
-            className="group flex items-center gap-2.5 rounded-[12px] bg-[#0F172A] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#1E293B] transition-all shadow-[0_4px_16px_rgba(15,23,42,0.2),0_0_28px_rgba(14,165,164,0.22)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.25),0_0_40px_rgba(14,165,164,0.32)] hover:-translate-y-0.5"
+            className="group btn-sheen flex items-center gap-2.5 rounded-[12px] bg-[#0F172A] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#1E293B] transition-all shadow-[0_4px_16px_rgba(15,23,42,0.2),0_0_28px_rgba(14,165,164,0.22)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.25),0_0_40px_rgba(14,165,164,0.32)] hover:-translate-y-0.5"
           >
             Start Assessment
             <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
@@ -230,26 +238,50 @@ export function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7, delay: 0.5 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs text-[#94A3B8] dark:text-neutral-500"
+          className="mt-12 flex flex-wrap items-center justify-center gap-3 text-xs font-medium"
         >
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-[#059669]" />
-            <span>HIPAA-Inspired Privacy</span>
-          </div>
-          <div className="w-1 h-1 rounded-full bg-[#E2E8F0] dark:bg-neutral-700 hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <Zap size={14} className="text-[#0EA5A4]" />
-            <span>Instant Results</span>
-          </div>
-          <div className="w-1 h-1 rounded-full bg-[#E2E8F0] dark:bg-neutral-700 hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <Heart size={14} className="text-[#DC2626]" />
-            <span>Built with Care</span>
-          </div>
+          {[
+            { icon: ShieldCheck, text: "Private by design", cls: "text-emerald-600 dark:text-emerald-400" },
+            { icon: Activity, text: "Results in under a minute", cls: "text-[#0EA5A4]" },
+            { icon: Heart, text: "Built with care", cls: "text-rose-500" },
+          ].map((b) => (
+            <div
+              key={b.text}
+              className="flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-white/[0.04] backdrop-blur-md border border-[#E2E8F0]/80 dark:border-white/[0.07] px-3.5 py-1.5 text-[#64748B] dark:text-neutral-400 shadow-[0_1px_6px_rgba(15,23,42,0.05)]"
+            >
+              <b.icon size={13} className={b.cls} />
+              <span>{b.text}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* ECG heartbeat divider — a pulse sweeping along a faint trace */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.7 }}
+          className="mt-12 max-w-xl mx-auto"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 800 60" fill="none" className="w-full h-12">
+            <path
+              d="M0 30 L150 30 L172 30 L184 12 L198 48 L210 4 L224 54 L238 20 L250 36 L262 30 L400 30 L422 30 L434 12 L448 48 L460 4 L474 54 L488 20 L500 36 L512 30 L650 30 L672 30 L684 12 L698 48 L710 4 L724 54 L738 20 L750 36 L762 30 L800 30"
+              stroke="rgba(14,165,164,0.18)"
+              strokeWidth="1.5"
+            />
+            <path
+              className="ecg-bright"
+              d="M0 30 L150 30 L172 30 L184 12 L198 48 L210 4 L224 54 L238 20 L250 36 L262 30 L400 30 L422 30 L434 12 L448 48 L460 4 L474 54 L488 20 L500 36 L512 30 L650 30 L672 30 L684 12 L698 48 L710 4 L724 54 L738 20 L750 36 L762 30 L800 30"
+              stroke="#0EA5A4"
+              strokeWidth="2"
+              strokeLinecap="round"
+              pathLength={1600}
+            />
+          </svg>
         </motion.div>
       </motion.section>
 
-      {/* Stats bar */}
+      {/* Stats bar — lifted cards overlapping the hero */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pb-16 md:pb-20">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
@@ -262,8 +294,8 @@ export function LandingPage() {
               whileHover={{ y: -3 }}
               className="flex flex-col items-center p-5 rounded-[12px] bg-white/60 dark:bg-white/[0.03] border border-[#E2E8F0]/60 dark:border-white/[0.06] backdrop-blur-sm"
             >
-              <div className="w-9 h-9 rounded-[10px] bg-[#0EA5A4]/10 flex items-center justify-center mb-3">
-                <stat.icon size={16} className="text-[#0EA5A4]" />
+              <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center mb-3 ${stat.tile}`}>
+                <stat.icon size={16} />
               </div>
               <AnimatedCounter stat={stat} delay={0.1 + i * 0.08} />
               <span className="text-xs text-[#64748B] dark:text-neutral-400 mt-1">{stat.label}</span>
@@ -280,7 +312,8 @@ export function LandingPage() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">How it works</h2>
+          <div className="eyebrow mb-4">The process</div>
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-3">How it works</h2>
           <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-md mx-auto">
             Three simple steps to understand your symptoms and find the right care path.
           </p>
@@ -298,13 +331,17 @@ export function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="relative text-center p-6 rounded-[14px] bg-white/50 dark:bg-white/[0.02] border border-[#E2E8F0]/50 dark:border-white/[0.04] hover:border-[#0EA5A4]/30 dark:hover:border-[#0EA5A4]/20 transition-all duration-300"
+              className="relative text-center p-6 rounded-[14px] bg-white/50 dark:bg-white/[0.02] border border-[#E2E8F0]/50 dark:border-white/[0.04] hover:border-[#0EA5A4]/30 dark:hover:border-[#0EA5A4]/20 hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="text-4xl font-bold text-[#0EA5A4]/20 dark:text-[#0EA5A4]/15 mb-3">{item.step}</div>
-              <h3 className="font-semibold text-lg text-[#0F172A] dark:text-white mb-2">{item.title}</h3>
+              <div className="w-11 h-11 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#0EA5A4] to-[#06B6B4] text-white flex items-center justify-center text-sm font-bold shadow-[0_4px_14px_rgba(14,165,164,0.35)]">
+                {i + 1}
+              </div>
+              <h3 className="font-display font-semibold text-lg text-[#0F172A] dark:text-white mb-2">{item.title}</h3>
               <p className="text-sm text-[#64748B] dark:text-neutral-400 leading-relaxed">{item.desc}</p>
               {i < 2 && (
-                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-[#E2E8F0] dark:bg-white/10" />
+                <div className="hidden md:flex absolute top-1/2 -right-[13px] -translate-y-1/2 items-center">
+                  <ChevronRight size={14} className="text-[#0EA5A4] drop-shadow-[0_0_6px_rgba(14,165,164,0.7)]" />
+                </div>
               )}
             </motion.div>
           ))}
@@ -319,7 +356,8 @@ export function LandingPage() {
           viewport={{ once: true }}
           className="text-center"
         >
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">What you get</h2>
+          <div className="eyebrow mb-4">Features</div>
+          <h2 className="font-display text-2xl md:text-3xl font-bold mb-3">What you get</h2>
           <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-md mx-auto">
             Everything you need for safe, informed health decisions — all in one place.
           </p>
@@ -344,10 +382,10 @@ export function LandingPage() {
               }}
               className="group spotlight-card rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.1)] transition-shadow duration-300"
             >
-              <div className="w-11 h-11 rounded-[11px] bg-[#0EA5A4]/10 group-hover:bg-[#0EA5A4]/15 flex items-center justify-center mb-4 transition-colors duration-300">
-                <feature.icon size={18} className="text-[#0EA5A4]" />
+              <div className={`w-11 h-11 rounded-[11px] flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 ${feature.tile}`}>
+                <feature.icon size={18} />
               </div>
-              <h3 className="font-semibold text-base mb-2 dark:text-white">{feature.title}</h3>
+              <h3 className="font-display font-semibold text-base mb-2 dark:text-white">{feature.title}</h3>
               <p className="text-sm text-[#64748B] dark:text-neutral-400 leading-relaxed">
                 {feature.description}
               </p>
@@ -358,18 +396,16 @@ export function LandingPage() {
 
       {/* Privacy & security */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pb-16 md:pb-24">
+        <div className="gradient-border">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-[16px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-8 md:p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]"
+          className="bg-white dark:bg-[#151B2C] p-8 md:p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]"
         >
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium mb-4">
-              <ShieldCheck size={13} />
-              Privacy First
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Your health data stays yours</h2>
+            <div className="eyebrow mb-4">Privacy first</div>
+            <h2 className="font-display text-2xl md:text-3xl font-bold mb-3">Your health data stays yours</h2>
             <p className="text-[#64748B] dark:text-neutral-400 text-sm max-w-lg mx-auto">
               We designed Salus Care so that the safest health tool is also the most private one.
             </p>
@@ -410,15 +446,17 @@ export function LandingPage() {
             ))}
           </div>
         </motion.div>
+        </div>
       </section>
 
       {/* Footer CTA */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pb-16 md:pb-24 text-center">
+        <div className="gradient-border">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative rounded-[16px] bg-[#0F172A] px-6 md:px-10 py-12 md:py-16 overflow-hidden"
+          className="relative bg-[#0F172A] px-6 md:px-10 py-12 md:py-16 overflow-hidden"
         >
           <div
             className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full opacity-20 blur-3xl pointer-events-none"
@@ -430,7 +468,7 @@ export function LandingPage() {
           />
 
           <div className="relative z-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">
               Ready to understand your symptoms?
             </h2>
             <p className="text-[#94A3B8] mb-8 max-w-lg mx-auto leading-relaxed">
@@ -438,13 +476,14 @@ export function LandingPage() {
             </p>
             <button
               onClick={goToApp}
-              className="group inline-flex items-center gap-2 rounded-[12px] bg-[#0EA5A4] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#0C8E8D] transition-all hover:-translate-y-0.5 shadow-[0_0_24px_rgba(14,165,164,0.3)] hover:shadow-[0_0_36px_rgba(14,165,164,0.45)]"
+              className="group btn-sheen inline-flex items-center gap-2 rounded-[12px] bg-[#0EA5A4] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#0C8E8D] transition-all hover:-translate-y-0.5 shadow-[0_0_24px_rgba(14,165,164,0.3)] hover:shadow-[0_0_36px_rgba(14,165,164,0.45)]"
             >
               Start Assessment
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </motion.div>
+        </div>
       </section>
 
       <p className="relative z-10 text-xs text-center text-[#94A3B8] dark:text-neutral-600 px-6 pb-6 max-w-2xl mx-auto leading-relaxed">

@@ -124,6 +124,26 @@ async function main() {
     );
     record("landing navbar shows Sign In", navState.signIn);
 
+    // Design-layer elements from the healthcare polish pass.
+    const design = await page.evaluate(() => ({
+      ecg: !!document.querySelector(".ecg-bright"),
+      gradientBorders: document.querySelectorAll(".gradient-border").length,
+      eyebrows: document.querySelectorAll(".eyebrow").length,
+      displayHeadings: document.querySelectorAll(".font-display").length,
+    }));
+    record("ECG heartbeat divider present", design.ecg);
+    record(
+      "gradient-border panels",
+      design.gradientBorders >= 2,
+      `${design.gradientBorders} panels`
+    );
+    record("eyebrow labels", design.eyebrows >= 3, `${design.eyebrows} labels`);
+    record(
+      "display font applied to headings",
+      design.displayHeadings >= 4,
+      `${design.displayHeadings} headings`
+    );
+
     record(
       "no unexpected JS errors",
       pageErrors.length === 0,

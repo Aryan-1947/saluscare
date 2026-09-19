@@ -49,6 +49,98 @@ body {
   background-clip: text;
 }
 
+/* Display font for headings (Plus Jakarta Sans, loaded in index.html) */
+.font-display {
+  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Section eyebrow micro-label with flanking hairlines */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #0EA5A4;
+}
+
+.eyebrow::before,
+.eyebrow::after {
+  content: '';
+  height: 1px;
+  width: 1.75rem;
+}
+
+.eyebrow::before {
+  background: linear-gradient(to right, transparent, rgba(14, 165, 164, 0.55));
+}
+
+.eyebrow::after {
+  background: linear-gradient(to left, transparent, rgba(14, 165, 164, 0.55));
+}
+
+/* Animated gradient border wrapper — inner child supplies the surface */
+.gradient-border {
+  padding: 1px;
+  border-radius: 16px;
+  background: linear-gradient(
+    120deg,
+    rgba(14, 165, 164, 0.55),
+    rgba(15, 23, 42, 0.14),
+    rgba(6, 182, 212, 0.55),
+    rgba(14, 165, 164, 0.55)
+  );
+  background-size: 300% 300%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+.gradient-border > * {
+  border-radius: 15px;
+}
+
+/* ECG heartbeat divider — a bright pulse sweeping along a faint trace.
+   The bright path uses SVG pathLength=1600 so dash math stays normalized. */
+@keyframes ecg-sweep {
+  from { stroke-dashoffset: 1600; }
+  to { stroke-dashoffset: 0; }
+}
+
+.ecg-bright {
+  stroke-dasharray: 140 1460;
+  animation: ecg-sweep 5s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(14, 165, 164, 0.65));
+}
+
+/* Light sheen sweeping across primary buttons on hover */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-sheen:hover::after {
+  left: 130%;
+}
+
+/* Branded text selection */
+::selection {
+  background: rgba(14, 165, 164, 0.28);
+}
+
 /* Glass card utility */
 .glass-card {
   background: rgba(255, 255, 255, 0.7);
@@ -96,6 +188,16 @@ body {
   border-radius: inherit;
   border: 2px solid currentColor;
   animation: pulse-ring 2s ease-out infinite;
+}
+
+/* Infinite CSS loops must stop for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .ecg-bright,
+  .animate-gradient,
+  .animate-float,
+  .gradient-border {
+    animation: none;
+  }
 }
 
 /* Mouse-follow spotlight for cards (vars --spot-x/--spot-y set from LandingPage) */
