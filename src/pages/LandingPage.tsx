@@ -1,9 +1,17 @@
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+  MotionConfig,
+  useInView,
+  animate,
+} from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Footer } from "@/components/landing/Footer";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Stethoscope,
   MessageSquareText,
@@ -22,6 +30,7 @@ import {
   Quote,
   Star,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 const features = [
   {
@@ -62,23 +71,52 @@ const features = [
   },
 ];
 
-const stats = [
-  { icon: Zap, value: "<60s", label: "Assessment Time" },
-  { icon: ShieldCheck, value: "3-Tier", label: "Safety System" },
-  { icon: Clock, value: "24/7", label: "Always Available" },
-  { icon: Heart, value: "Free", label: "No Cost" },
+type Stat = {
+  icon: LucideIcon;
+  value: number | null; // null = render static text instead of counting up
+  prefix?: string;
+  suffix?: string;
+  staticValue?: string;
+  label: string;
+};
+
+const stats: Stat[] = [
+  { icon: Zap, value: 60, prefix: "<", suffix: "s", label: "Assessment Time" },
+  { icon: ShieldCheck, value: 3, suffix: "-Tier", label: "Safety System" },
+  { icon: Clock, value: 24, suffix: "/7", label: "Always Available" },
+  { icon: Heart, value: null, staticValue: "Free", label: "No Cost" },
 ];
 
-function AnimatedCounter({ value, delay }: { value: string; delay: number }) {
+// Counts 0 -> target the first time the stat scrolls into view. Static
+// values ("Free") render as-is.
+function AnimatedCounter({ stat, delay }: { stat: Stat; delay: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const [display, setDisplay] = useState(() =>
+    stat.value === null ? (stat.staticValue ?? "") : `${stat.prefix ?? ""}0${stat.suffix ?? ""}`
+  );
+
+  useEffect(() => {
+    if (!inView || stat.value === null) return;
+    const controls = animate(0, stat.value, {
+      duration: 1.1,
+      delay,
+      ease: "easeOut",
+      onUpdate: (v) => setDisplay(`${stat.prefix ?? ""}${Math.round(v)}${stat.suffix ?? ""}`),
+    });
+    return () => controls.stop();
+  }, [inView, delay, stat]);
+
   return (
     <motion.span
+      ref={ref}
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
       className="text-3xl md:text-4xl font-bold gradient-text"
     >
-      {value}
+      {display}
     </motion.span>
   );
 }
@@ -172,18 +210,25 @@ export function LandingPage() {
   const goToApp = () => navigate(isAuthenticated ? "/ask" : "/login");
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-white transition-colors">
-      {/* Ambient background — gradient mesh */}
+      {/* Ambient background — gradient mesh, ultra-slow drift */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
+        <motion.div
+          animate={{ x: [0, 50, -30, 0], y: [0, -40, 25, 0] }}
+          transition={{ duration: 60, repeat: Infinity, ease: "easeInOut" }}
           className="absolute -top-32 -right-20 w-[700px] h-[700px] rounded-full opacity-[0.18] dark:opacity-[0.22] blur-3xl"
           style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
         />
-        <div
+        <motion.div
+          animate={{ x: [0, -40, 30, 0], y: [0, 30, -25, 0] }}
+          transition={{ duration: 75, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-[30%] -left-32 w-[600px] h-[600px] rounded-full opacity-[0.12] dark:opacity-[0.16] blur-3xl"
           style={{ background: "radial-gradient(circle, #0F172A, transparent 70%)" }}
         />
-        <div
+        <motion.div
+          animate={{ x: [0, 35, -45, 0], y: [0, 25, -30, 0] }}
+          transition={{ duration: 50, repeat: Infinity, ease: "easeInOut" }}
           className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full opacity-[0.1] dark:opacity-[0.14] blur-3xl"
           style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
         />
@@ -197,13 +242,24 @@ export function LandingPage() {
         style={{ opacity: heroOpacity, scale: heroScale }}
         className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 pt-20 md:pt-28 pb-16 md:pb-24 text-center"
       >
+        {/* Backdrop: faint dot grid + breathing teal glow */}
+        <div className="absolute inset-0 -z-10 bg-dots opacity-60 [mask-image:radial-gradient(ellipse_60%_60%_at_50%_35%,black,transparent)]" />
+        <div className="absolute left-1/2 top-24 -z-10 -translate-x-1/2">
+          <motion.div
+            animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.08, 1] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+            className="h-[420px] w-[620px] rounded-full blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(14,165,164,0.2), transparent 70%)" }}
+          />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0EA5A4]/10 border border-[#0EA5A4]/20 text-[#0EA5A4] text-xs font-medium mb-6"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#0EA5A4] animate-pulse" />
+          <span className="relative w-1.5 h-1.5 rounded-full bg-[#0EA5A4] pulse-ring" />
           AI-Powered Health Triage
         </motion.div>
 
@@ -214,7 +270,7 @@ export function LandingPage() {
           className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1]"
         >
           Your intelligent guide to{" "}
-          <span className="text-[#0EA5A4]">safer healthcare decisions.</span>
+          <span className="gradient-text animate-gradient">safer healthcare decisions.</span>
         </motion.h1>
 
         <motion.p
@@ -235,14 +291,14 @@ export function LandingPage() {
         >
           <button
             onClick={goToApp}
-            className="group flex items-center gap-2.5 rounded-[12px] bg-[#0F172A] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#1E293B] transition-all shadow-[0_4px_16px_rgba(15,23,42,0.2)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.25)] hover:-translate-y-0.5"
+            className="group flex items-center gap-2.5 rounded-[12px] bg-[#0F172A] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#1E293B] transition-all shadow-[0_4px_16px_rgba(15,23,42,0.2),0_0_28px_rgba(14,165,164,0.22)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.25),0_0_40px_rgba(14,165,164,0.32)] hover:-translate-y-0.5"
           >
             Start Assessment
             <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
           <button
             onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-            className="rounded-[12px] border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-white/[0.03] px-7 py-3.5 text-sm font-semibold text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-white/[0.06] transition-all hover:-translate-y-0.5"
+            className="rounded-[12px] border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-white/[0.03] px-7 py-3.5 text-sm font-semibold text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-white/[0.06] hover:border-[#0EA5A4]/40 transition-all hover:-translate-y-0.5"
           >
             Learn How It Works
           </button>
@@ -282,12 +338,13 @@ export function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
+              whileHover={{ y: -3 }}
               className="flex flex-col items-center p-5 rounded-[12px] bg-white/60 dark:bg-white/[0.03] border border-[#E2E8F0]/60 dark:border-white/[0.06] backdrop-blur-sm"
             >
               <div className="w-9 h-9 rounded-[10px] bg-[#0EA5A4]/10 flex items-center justify-center mb-3">
                 <stat.icon size={16} className="text-[#0EA5A4]" />
               </div>
-              <AnimatedCounter value={stat.value} delay={0.1 + i * 0.08} />
+              <AnimatedCounter stat={stat} delay={0.1 + i * 0.08} />
               <span className="text-xs text-[#64748B] dark:text-neutral-400 mt-1">{stat.label}</span>
             </motion.div>
           ))}
@@ -359,7 +416,12 @@ export function LandingPage() {
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="group rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.1)] transition-shadow duration-300"
+              onMouseMove={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
+                e.currentTarget.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
+              }}
+              className="group spotlight-card rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.1)] transition-shadow duration-300"
             >
               <div className="w-11 h-11 rounded-[11px] bg-[#0EA5A4]/10 group-hover:bg-[#0EA5A4]/15 flex items-center justify-center mb-4 transition-colors duration-300">
                 <feature.icon size={18} className="text-[#0EA5A4]" />
@@ -395,7 +457,13 @@ export function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              className="rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 flex flex-col shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]"
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              onMouseMove={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
+                e.currentTarget.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
+              }}
+              className="spotlight-card rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-6 flex flex-col shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)]"
             >
               <Quote size={18} className="text-[#0EA5A4]/60 mb-3" />
               <blockquote className="text-sm text-[#0F172A] dark:text-neutral-200 leading-relaxed flex-1">
@@ -525,7 +593,7 @@ export function LandingPage() {
             </p>
             <button
               onClick={goToApp}
-              className="group inline-flex items-center gap-2 rounded-[12px] bg-[#0EA5A4] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#0C8E8D] transition-all hover:-translate-y-0.5"
+              className="group inline-flex items-center gap-2 rounded-[12px] bg-[#0EA5A4] text-white px-7 py-3.5 text-sm font-semibold hover:bg-[#0C8E8D] transition-all hover:-translate-y-0.5 shadow-[0_0_24px_rgba(14,165,164,0.3)] hover:shadow-[0_0_36px_rgba(14,165,164,0.45)]"
             >
               Start Assessment
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
@@ -540,5 +608,6 @@ export function LandingPage() {
       </p>
       <Footer />
     </div>
+    </MotionConfig>
   );
 }

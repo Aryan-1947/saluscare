@@ -97,3 +97,37 @@ body {
   border: 2px solid currentColor;
   animation: pulse-ring 2s ease-out infinite;
 }
+
+/* Mouse-follow spotlight for cards (vars --spot-x/--spot-y set from LandingPage) */
+.spotlight-card {
+  position: relative;
+}
+
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    320px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(14, 165, 164, 0.1),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+/* Faint dot grid used behind the hero */
+.bg-dots {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.16) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+}
