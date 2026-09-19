@@ -6,7 +6,7 @@ import { verifyAuth0Token } from "./auth0Verify.ts";
 //
 // verifyAuth0Token proves WHO the caller is; these helpers make sure every
 // query is scoped to that identity. Rules:
-//   1. The user id ALWAYS comes from the verified token (`sub`) — never from
+//   1. The user id ALWAYS comes from the verified token (`sub`) - never from
 //      the request body, query string, or any client-supplied field.
 //   2. Every SELECT gets `.eq("auth0_user_id", userId)`.
 //   3. Every INSERT carries `auth0_user_id: userId`.
@@ -31,7 +31,7 @@ export async function requireAuthedContext(
 }
 
 // Fetch a session row only if it belongs to the authenticated user.
-// Returns null when it doesn't exist OR isn't owned by the caller —
+// Returns null when it doesn't exist OR isn't owned by the caller -
 // both cases are treated as 404 so ownership can't be probed.
 export async function getOwnedSession(
   ctx: AuthedContext,
@@ -110,7 +110,7 @@ export async function insertOwnedSessionHistory(
 export type SessionStatus = "open" | "closed_followed_up" | "closed_emergency";
 
 // New sessions open by default. Failure to stamp a status is logged but not
-// fatal — the metric treats NULL as inactive.
+// fatal - the metric treats NULL as inactive.
 export async function openSession(ctx: AuthedContext, sessionId: string) {
   const { error } = await ctx.supabase
     .from("sessions")

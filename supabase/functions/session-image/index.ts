@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
     // Upload image to Supabase Storage, namespaced per user so storage-level
     // policies can also scope access if direct client reads are ever enabled.
     // NOTE: the raw Auth0 sub contains '|' (google-oauth2|123...) which is an
-    // INVALID storage key char — storageSafeId sanitizes every component.
+    // INVALID storage key char - storageSafeId sanitizes every component.
     let filePath: string;
     try {
       filePath = buildImagePath(ctx.userId, sessionId, imageMimeType);

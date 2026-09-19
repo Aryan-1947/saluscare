@@ -71,7 +71,7 @@ describe("scoreConfidence", () => {
   });
 
   it("clamps to the documented [0, 100] range", () => {
-    // 50 - 15 (bad image) - 20 (ambiguous) = 15 — within range, unclamped.
+    // 50 - 15 (bad image) - 20 (ambiguous) = 15 - within range, unclamped.
     const low = scoreConfidence({
       hasStructuredText: false,
       hasImage: true,
@@ -81,7 +81,7 @@ describe("scoreConfidence", () => {
     });
     expect(low).toBe(15);
 
-    // 50 + 15 + 20 + 10*2 (capped at 2) = 100 — exactly at the top.
+    // 50 + 15 + 20 + 10*2 (capped at 2) = 100 - exactly at the top.
     const high = scoreConfidence({
       hasStructuredText: true,
       hasImage: true,
@@ -94,7 +94,7 @@ describe("scoreConfidence", () => {
 });
 
 // ---------------------------------------------------------------------------
-// runTriageEngine — the deterministic tier decision layer.
+// runTriageEngine - the deterministic tier decision layer.
 // ---------------------------------------------------------------------------
 
 function extracted(overrides: Partial<ExtractedSymptoms> = {}): ExtractedSymptoms {

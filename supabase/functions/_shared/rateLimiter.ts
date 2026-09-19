@@ -6,7 +6,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 // Every triage request fires multiple paid Groq calls (intake, response
 // builder, explainer, and now the red-flag safety net), so an automated or
 // buggy client can run up a real API bill. This is a sliding-window counter
-// stored in Postgres — no extra infra, atomic via a single SQL function, and
+// stored in Postgres - no extra infra, atomic via a single SQL function, and
 // scoped per user + endpoint.
 //
 // Design notes:

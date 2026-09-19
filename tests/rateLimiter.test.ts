@@ -73,7 +73,7 @@ describe("checkRateLimit", () => {
   });
 
   it("treats a null rpc result as blocked (defensive: unknown state)", async () => {
-    // data: null with no error means the function returned nothing unexpected —
+    // data: null with no error means the function returned nothing unexpected -
     // row?.allowed === true is false, so this blocks with the limit values.
     const { client } = makeSupabaseStub({ resolveWith: null });
     const result = await checkRateLimit(client, USER, RULE);

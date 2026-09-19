@@ -20,15 +20,15 @@ supabase/functions/
 
 Request flow for triage (`session-message` / `session-image` / `session-followup`):
 
-1. **Auth** — Auth0 JWT verified against JWKS (`_shared/auth0Verify.ts`).
-2. **Rate limit** — per-user sliding window (`_shared/rateLimiter.ts` + SQL `check_rate_limit`).
-3. **Red-flag screen** — deterministic DB pattern scan (negation-guarded), then an
+1. **Auth** - Auth0 JWT verified against JWKS (`_shared/auth0Verify.ts`).
+2. **Rate limit** - per-user sliding window (`_shared/rateLimiter.ts` + SQL `check_rate_limit`).
+3. **Red-flag screen** - deterministic DB pattern scan (negation-guarded), then an
    LLM safety net for paraphrased emergencies (`_shared/redFlagMatcher.ts`).
-4. **Intake agent** — extracts structured symptoms, decides sufficiency, may ask
+4. **Intake agent** - extracts structured symptoms, decides sufficiency, may ask
    one clarifying question.
-5. **Triage engine** — deterministic discriminators set the tier (1 self-care,
+5. **Triage engine** - deterministic discriminators set the tier (1 self-care,
    2 specialist, 3 emergency); confidence < 50 escalates one tier.
-6. **Response builders** — knowledge-base lookup with category fallback, then
+6. **Response builders** - knowledge-base lookup with category fallback, then
    explainer/follow-up agents write the closing note (static fallback if the
    LLM returns empty twice).
 
@@ -54,7 +54,7 @@ Required `.env` keys (backend, for the smoke test):
 ## Testing
 
 ```bash
-npm test                      # 94 unit tests (vitest) — no network needed
+npm test                      # 94 unit tests (vitest) - no network needed
 python scripts/smoke_test.py  # 18-check end-to-end test against DEPLOYED functions
 ```
 
@@ -97,7 +97,7 @@ npx supabase secrets set ALLOWED_ORIGINS=https://your-frontend.example.com
 (5173/3000) are always allowed. Browser calls from any other origin are
 rejected at the CORS layer.
 
-`config.toml` sets `verify_jwt = false` for all functions on purpose — Auth0
+`config.toml` sets `verify_jwt = false` for all functions on purpose - Auth0
 tokens (not Supabase JWTs) are verified in code by `_shared/auth0Verify.ts`.
 
 ## Security model

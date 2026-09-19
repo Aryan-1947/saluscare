@@ -3,7 +3,7 @@ import { checkRedFlags, type RedFlagMatch } from "../supabase/functions/_shared/
 
 // Minimal SupabaseClient stub: checkRedFlags only calls .from().select(), so an
 // object returning our fixture rows is sufficient for the test's purposes.
-// (Cast to any — the real SupabaseClient type is Deno-only npm: specifier.)
+// (Cast to any - the real SupabaseClient type is Deno-only npm: specifier.)
 function makeSupabaseStub(rows: any[]) {
   const result = { data: rows, error: null };
   const client = {
@@ -28,7 +28,7 @@ function check(text?: string, visual?: string, groq?: any): Promise<RedFlagMatch
   return checkRedFlags(makeSupabaseStub(FLAGS), text, visual, groq ? { groq } : {});
 }
 
-describe("checkRedFlags — deterministic layer", () => {
+describe("checkRedFlags - deterministic layer", () => {
   it("matches a stored pattern", async () => {
     const r = await check("I have severe chest pain right now");
     expect(r.matched).toBe(true);
@@ -115,7 +115,7 @@ describe("checkRedFlags — deterministic layer", () => {
   });
 });
 
-describe("checkRedFlags — LLM paraphrase fallback", () => {
+describe("checkRedFlags - LLM paraphrase fallback", () => {
   const llmGroq = (response: object) => ({
     chat: {
       completions: {

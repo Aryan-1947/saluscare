@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Storage key sanitization for Supabase Storage.
 //
-// Auth0 subject ids look like "auth0|123..." or "google-oauth2|10966..." —
+// Auth0 subject ids look like "auth0|123..." or "google-oauth2|10966..." -
 // the pipe is fine for DB text columns, but it is NOT a valid Supabase
 // Storage object key character ("Invalid key" on upload). Every storage
 // path component must go through storageSafeId().

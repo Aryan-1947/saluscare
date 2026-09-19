@@ -4,7 +4,7 @@
 // Every function used to reply `Access-Control-Allow-Origin: *`. Since all
 // endpoints authenticate with an Auth0 bearer token, a wildcard CORS policy
 // hands any website the ability to fire authenticated triage requests (and
-// paid Groq calls) from a victim's browser — the browser blocks the *reads*,
+// paid Groq calls) from a victim's browser - the browser blocks the *reads*,
 // but the writes (and the API spend) still go through.
 //
 // Rules:
@@ -12,7 +12,7 @@
 //     localhost dev origins, which are always allowed (no mixed-content or
 //     token-leak concern for a local listener using loopback).
 //   - Non-browser clients (curl, the smoke test) send no Origin header and
-//     are unaffected by CORS — they are still subject to auth + rate limits.
+//     are unaffected by CORS - they are still subject to auth + rate limits.
 //   - With no Origin header, responses carry no ACAO header at all, so
 //     browser-based callers are strictly allowlist-gated.
 // ---------------------------------------------------------------------------

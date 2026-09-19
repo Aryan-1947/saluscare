@@ -18,7 +18,7 @@ type RedFlagRow = {
 /**
  * Normalization for substring matching: lowercase, straight apostrophes
  * ("won't"/"wont"), collapse whitespace. Punctuation (except apostrophes) is
- * stripped only from the PATIENT text — stored patterns are normalized the
+ * stripped only from the PATIENT text - stored patterns are normalized the
  * same way, so "bleeding that won't stop" still matches "bleeding that wont
  * stop!!" while a hyphenated "face-drooping" still contains "face drooping".
  */
@@ -82,11 +82,11 @@ function scanRow(row: RedFlagRow, normalizedText: string, normalizedVisual: stri
   return false;
 }
 
-const RED_FLAG_LLM_SYSTEM_PROMPT = `You are the last-line safety net in a medical triage system. You are given a patient's message (and, when an image was analyzed, the vision model's findings). Your ONLY job is to decide whether the patient is describing a medical EMERGENCY right now — a red flag that requires immediate emergency care (call emergency services / go to the ER now).
+const RED_FLAG_LLM_SYSTEM_PROMPT = `You are the last-line safety net in a medical triage system. You are given a patient's message (and, when an image was analyzed, the vision model's findings). Your ONLY job is to decide whether the patient is describing a medical EMERGENCY right now - a red flag that requires immediate emergency care (call emergency services / go to the ER now).
 
 Emergency red flags include (non-exhaustive): cardiac (chest pain/pressure, especially with sweating or arm/jaw pain), respiratory (difficulty breathing, choking, throat swelling/closing, inability to speak full sentences, blue lips), neurological (worst-ever or sudden severe headache, face drooping, one-sided weakness or numbness, slurred speech, seizure, loss of consciousness, stiff neck with high fever), trauma (uncontrolled bleeding, deep wound exposing bone), gastrointestinal (vomiting blood, coughing up blood, severe abdominal pain with a rigid abdomen), allergic (anaphylaxis, severe allergic reaction), and psychiatric (suicidal thoughts or intent).
 
-The patient may phrase these in their own words — e.g. "swelling is blocking my airway", "I can't get any air", "my face went slack on one side", "blood is pouring out and it won't stop". Judge MEANING, not exact keywords.
+The patient may phrase these in their own words - e.g. "swelling is blocking my airway", "I can't get any air", "my face went slack on one side", "blood is pouring out and it won't stop". Judge MEANING, not exact keywords.
 
 Rules:
 - isEmergency = true ONLY for symptoms that plausibly indicate one of the red flags above, happening NOW or just happened.
@@ -153,12 +153,12 @@ async function runLLMRedFlagCheck(
  * Layered red-flag detection:
  *   1. Deterministic scan of stored DB patterns (negation-guarded substring +
  *      spacing/plural-tolerant regex). Fast, free, and covers most emergencies.
- *   2. Optional LLM paraphrase check (pass `groq` to enable) — catches
+ *   2. Optional LLM paraphrase check (pass `groq` to enable) - catches
  *      emergencies phrased without any stored keyword, e.g. "swelling is
  *      blocking my airway" when only "throat closing" is stored.
  * The LLM check runs ONLY when the deterministic scan found nothing, so a
  * stored-pattern hit always wins and latency is only added on the miss path.
- * On any LLM failure we fail OPEN (proceed as non-emergency) — the call sites'
+ * On any LLM failure we fail OPEN (proceed as non-emergency) - the call sites'
  * downstream discriminators/severity escalation still provide a safety net.
  */
 export async function checkRedFlags(

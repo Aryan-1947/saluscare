@@ -19,7 +19,7 @@ const RATE_LIMIT = { endpoint: "session-summaries", limit: 60, windowSeconds: 30
 // query and no storage/Groq work.
 //
 // Response: { summaries: [{ sessionId, complaintText, tier, lastActivityAt }] }
-// Only sessions owned by the caller are returned — unknown/foreign ids are
+// Only sessions owned by the caller are returned - unknown/foreign ids are
 // silently omitted (ownership can't be probed).
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
     // Follow-up chains: a root assessment spawns child sessions
     // (session_history rows). The list should reflect the LATEST state of the
-    // chain — the leaf's tier and the leaf's activity time — while keeping the
+    // chain - the leaf's tier and the leaf's activity time - while keeping the
     // root's original complaint as the stable summary text.
     const { data: historyRows, error: historyError } = await supabase
       .from("session_history")

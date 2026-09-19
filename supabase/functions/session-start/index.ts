@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         sessionId,
         greeting:
-          "Hi, I'm here to help you understand your symptoms. Describe what you're experiencing, or share a photo if it helps — whichever feels easier.",
+          "Hi, I'm here to help you understand your symptoms. Describe what you're experiencing, or share a photo if it helps - whichever feels easier.",
       }),
       { status: 200, headers }
     );

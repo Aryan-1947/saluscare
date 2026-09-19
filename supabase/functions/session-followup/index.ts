@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
     if (messageType === "general_question") {
       const answer = await runGeneralQuestionAgent(groq, priorSession, text, recentExchanges);
       await logOwnedChatTurn(ctx, chatGroupId, "assistant", "answer", answer);
-      // A general question isn't a symptom update — the assessment is still
+      // A general question isn't a symptom update - the assessment is still
       // awaiting a real follow-up, so the parent stays open.
       return new Response(
         JSON.stringify({
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
     const nonComplianceSignals = ["didn't go", "didnt go", "haven't seen", "havent seen", "haven't been", "havent been", "didn't visit", "didnt visit", "still haven't", "still havent", "didn't see", "didnt see"];
     const isNonCompliant = nonComplianceSignals.some((s) => text.toLowerCase().includes(s));
 
-    // Symptom update — extract using the COMBINED context, not the new message alone
+    // Symptom update - extract using the COMBINED context, not the new message alone
     const extracted = await runIntakeAgent(groq, combinedText);
     const triage = runTriageEngine(extracted, false, false);
 

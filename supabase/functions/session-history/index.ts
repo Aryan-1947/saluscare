@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // User-scoped: a group_id that belongs to another user is indistinguishable
-    // from one that doesn't exist — ownership can't be probed through this API.
+    // from one that doesn't exist - ownership can't be probed through this API.
     const { data: chatTurns, error: chatTurnsError } = await supabase
       .from("chat_turns")
       .select("role, kind, content, image_url, image_path, result, created_at")

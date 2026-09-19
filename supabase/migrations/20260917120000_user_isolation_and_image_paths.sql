@@ -8,7 +8,7 @@
 --   chat history went broken after an hour.
 --
 -- This migration:
---   1. Adds auth0_user_id columns (nullable — legacy rows stay visible to
+--   1. Adds auth0_user_id columns (nullable - legacy rows stay visible to
 --      their owner once backfilled; NULL rows are treated as legacy data).
 --   2. Backfills chat_turns / session_history ownership from sessions.
 --   3. Adds indexes for the user-scoped queries the edge functions now run.
