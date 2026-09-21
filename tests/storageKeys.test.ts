@@ -4,6 +4,9 @@ import {
   assertUuid,
   safeImageExtension,
   buildImagePath,
+  assertUploadableImage,
+  IMAGE_MIME_ALLOWLIST,
+  MAX_IMAGE_BYTES,
 } from "../supabase/functions/_shared/storageKeys.ts";
 
 describe("storageSafeId", () => {
@@ -52,7 +55,10 @@ describe("safeImageExtension", () => {
     expect(safeImageExtension("image/jpeg")).toBe("jpg");
     expect(safeImageExtension("image/png")).toBe("png");
     expect(safeImageExtension("image/webp")).toBe("webp");
-    expect(safeImageExtension("image/heic")).toBe("heic");
+    // HEIC/HEIF are rejected upstream by assertUploadableImage, so the
+    // extension map no longer accepts them - the jpg fallback only applies
+    // to values that can never reach storage.
+    expect(safeImageExtension("image/heic")).toBe("jpg");
   });
 
   it("falls back to jpg for unknown or missing types", () => {
@@ -63,6 +69,36 @@ describe("safeImageExtension", () => {
 
   it("strips mime parameters", () => {
     expect(safeImageExtension("image/png; charset=utf-8")).toBe("png");
+  });
+});
+
+describe("assertUploadableImage", () => {
+  it("accepts every allowlisted mime type", () => {
+    for (const mime of IMAGE_MIME_ALLOWLIST) {
+      expect(() => assertUploadableImage(mime, 1024)).not.toThrow();
+    }
+  });
+
+  it("accepts mime parameters and case differences", () => {
+    expect(() => assertUploadableImage("IMAGE/PNG; charset=binary", 1024)).not.toThrow();
+  });
+
+  it("rejects non-image mime types (server-side allowlist)", () => {
+    expect(() => assertUploadableImage("application/pdf", 1024)).toThrow(/Unsupported image type/);
+    expect(() => assertUploadableImage("image/heic", 1024)).toThrow(/Unsupported image type/);
+    expect(() => assertUploadableImage(undefined, 1024)).toThrow(/Unsupported image type/);
+    expect(() => assertUploadableImage("", 1024)).toThrow(/Unsupported image type/);
+  });
+
+  it("rejects empty or non-finite payload sizes", () => {
+    expect(() => assertUploadableImage("image/png", 0)).toThrow(/empty/);
+    expect(() => assertUploadableImage("image/png", -5)).toThrow(/empty/);
+    expect(() => assertUploadableImage("image/png", Number.NaN)).toThrow(/empty/);
+  });
+
+  it("rejects payloads above the size cap", () => {
+    expect(() => assertUploadableImage("image/jpeg", MAX_IMAGE_BYTES + 1)).toThrow(/too large/);
+    expect(() => assertUploadableImage("image/jpeg", MAX_IMAGE_BYTES)).not.toThrow();
   });
 });
 

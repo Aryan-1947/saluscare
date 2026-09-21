@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import Groq from "npm:groq-sdk@1";
 import type { Tier1Response, Tier2Response, ExtractedSymptoms } from "./types.ts";
+import { withJsonRetry } from "./jsonRetry.ts";
 
 async function fetchGroundingData(supabase: SupabaseClient, extracted: ExtractedSymptoms) {
   const [specialistRes, principlesRes, medicationRes, precautionRes] = await Promise.all([
@@ -98,19 +99,23 @@ export async function generateTierResponse(
     applicablePrecautions: grounding.precautions,
   };
 
-  const completion = await groq.chat.completions.create({
-    model: "openai/gpt-oss-120b",
-    messages: [
-      { role: "system", content: GENERATIVE_SYSTEM_PROMPT },
-      { role: "user", content: JSON.stringify(userPayload) },
-    ],
-    temperature: 0.3,
-    max_tokens: 1400,
-    response_format: { type: "json_object" },
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(raw);
+  // Transient Groq "json_validate_failed" failures retry once instead of
+  // surfacing as a raw 500 after the user's message was already logged.
+  const parsed = await withJsonRetry(
+    () =>
+      groq.chat.completions.create({
+        model: "openai/gpt-oss-120b",
+        messages: [
+          { role: "system", content: GENERATIVE_SYSTEM_PROMPT },
+          { role: "user", content: JSON.stringify(userPayload) },
+        ],
+        temperature: 0.3,
+        max_tokens: 1400,
+        response_format: { type: "json_object" },
+      }),
+    (raw) => JSON.parse(raw),
+    () => ({})
+  );
 
   // Safety net: strip any first-aid item that wasn't actually in our allowed medication list,
   // and always overwrite the precaution with our verified database text (never trust the model's own wording).

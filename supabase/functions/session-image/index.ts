@@ -9,7 +9,7 @@ import { buildEmergencyResponse } from "../_shared/responseBuilders.ts";
 import { generateTierResponse } from "../_shared/generativeResponseBuilder.ts";
 import { corsHeadersFor, preflightResponse } from "../_shared/cors.ts";
 import { checkRateLimit, rateLimitResponse } from "../_shared/rateLimiter.ts";
-import { buildImagePath } from "../_shared/storageKeys.ts";
+import { buildImagePath, assertUploadableImage } from "../_shared/storageKeys.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,6 +64,17 @@ Deno.serve(async (req: Request) => {
     }
     const binaryData = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
 
+    // Server-side re-validation: the client's accept= and downscaler are
+    // advisory only, so anything malicious or oversized is rejected here.
+    try {
+      assertUploadableImage(imageMimeType, binaryData.byteLength);
+    } catch (err) {
+      return new Response(JSON.stringify({ error: String(err) }), {
+        status: 415,
+        headers,
+      });
+    }
+
     const { error: uploadError } = await supabase.storage
       .from("symptom-images")
       .upload(filePath, binaryData, { contentType: imageMimeType ?? "image/jpeg" });
@@ -88,8 +99,25 @@ Deno.serve(async (req: Request) => {
 
     await logOwnedChatTurn(ctx, chatGroupId, "user", "image", text || null, imageUrl, filePath);
 
+    // Run vision analysis for EVERY image (captioned or not). Previously an
+    // uncaptioned upload skipped analysis entirely, so when the user later
+    // answered the clarifying question the image was ignored and the final
+    // triage was text-only.
+    let vision: Awaited<ReturnType<typeof runVisionFusionAgent>>;
+    try {
+      vision = await runVisionFusionAgent(groq, imageUrl, text);
+    } catch (err) {
+      // Fail open: an LLM outage must never 500 the request after the image
+      // was already stored and logged. Degrade to text-only analysis.
+      console.error("Vision agent failed (continuing without it):", String(err));
+      vision = { visualFindings: "", imageQualityGood: false };
+    }
+
     // If no caption text provided, ask a clarifying question instead of triaging on image alone
     if (!text || text.trim().length === 0) {
+      const imageContext = vision.visualFindings
+        ? `Visible findings from the uploaded image: ${vision.visualFindings}`
+        : "Visible findings from the uploaded image: unavailable";
       // Ownership matters here too: an unscoped insert would stamp NULL owner
       // and make this turn invisible to the user's own history reads.
       await logOwnedChatTurn(ctx, chatGroupId, "assistant", "question", "How long has this looked like this?");
@@ -99,12 +127,14 @@ Deno.serve(async (req: Request) => {
           needsClarification: true,
           clarifyingQuestion: "How long has this looked like this?",
           imageUrl,
+          imageContext,
+          // Ride along the vision quality signal so the follow-up answer can
+          // forward it for confidence scoring (frontend reads res.imageQualityGood).
+          imageQualityGood: vision.imageQualityGood === true,
         }),
         { status: 200, headers }
       );
     }
-
-    const vision = await runVisionFusionAgent(groq, imageUrl, text);
 
     const redFlag = await checkRedFlags(supabase, text, vision.visualFindings, { groq, hasImage: true });
 

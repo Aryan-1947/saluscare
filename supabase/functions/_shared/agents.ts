@@ -1,11 +1,14 @@
 import Groq from "npm:groq-sdk@1";
 import type { ExtractedSymptoms, Tier1Response, Tier2Response, Tier3Response } from "./types.ts";
+import { withJsonRetry } from "./jsonRetry.ts";
 
 const MODELS = {
   intake: "openai/gpt-oss-120b",
   explainer: "openai/gpt-oss-120b",
   webSearch: "groq/compound-mini",
 };
+
+
 
 // Graceful degradation: gpt-oss is a reasoning model and can return an empty
 // note even after a retry (budget exhausted by reasoning tokens, transient// outage). The structured guidance card above the note is complete on its own,
@@ -60,18 +63,20 @@ Respond ONLY with valid JSON matching this shape:
 }`;
 
 export async function runIntakeAgent(groq: Groq, text: string): Promise<ExtractedSymptoms> {
-  const completion = await groq.chat.completions.create({
-    model: MODELS.intake,
-    messages: [
-      { role: "system", content: INTAKE_SYSTEM_PROMPT },
-      { role: "user", content: text },
-    ],
-    temperature: 0,
-    response_format: { type: "json_object" },
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(raw);
+  const parsed = await withJsonRetry(
+    () =>
+      groq.chat.completions.create({
+        model: MODELS.intake,
+        messages: [
+          { role: "system", content: INTAKE_SYSTEM_PROMPT },
+          { role: "user", content: text },
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+    (raw) => JSON.parse(raw),
+    () => ({})
+  );
 
   return {
     symptoms: parsed.symptoms ?? [],
@@ -182,28 +187,28 @@ Respond ONLY with valid JSON matching this shape:
 {
   "sufficient": boolean,
   "clarifyingQuestion": string | null
-}`;
-
-export async function runSufficiencyCheck(
+}`;export async function runSufficiencyCheck(
   groq: Groq,
   rawText: string,
   extracted: ExtractedSymptoms
 ): Promise<{ sufficient: boolean; clarifyingQuestion: string | null }> {
-  const completion = await groq.chat.completions.create({
-    model: MODELS.intake,
-    messages: [
-      { role: "system", content: SUFFICIENCY_SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: JSON.stringify({ rawText, extracted }),
-      },
-    ],
-    temperature: 0,
-    response_format: { type: "json_object" },
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? "{}";
-  const parsed = JSON.parse(raw);
+  const parsed = await withJsonRetry(
+    () =>
+      groq.chat.completions.create({
+        model: MODELS.intake,
+        messages: [
+          { role: "system", content: SUFFICIENCY_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: JSON.stringify({ rawText, extracted }),
+          },
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+    (raw) => JSON.parse(raw),
+    () => ({})
+  );
 
   return {
     sufficient: parsed.sufficient ?? true,

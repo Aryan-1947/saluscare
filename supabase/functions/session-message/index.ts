@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
   if (!rl.allowed) return rateLimitResponse(rl, headers);
 
   try {
-    const { text, sessionId, skipClarification, groupId } = await req.json();
+    const { text, sessionId, skipClarification, groupId, hasImage, imageQualityGood } = await req.json();
     const chatGroupId = groupId ?? sessionId;
     
 
@@ -77,7 +77,10 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      triage = runTriageEngine(extracted, false, false);
+      // When this message answers an image clarification, the client passes
+      // hasImage/imageQualityGood so the confidence scorer keeps the image
+      // signal (the vision findings themselves ride along inside `text`).
+      triage = runTriageEngine(extracted, hasImage === true, imageQualityGood === true);
       tier = triage.tier;
 
       if (tier === 3) {
