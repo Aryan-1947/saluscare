@@ -31,18 +31,35 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 function NotFoundPage() {
   const location = useLocation();
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
-      <p className="text-5xl font-bold gradient-text mb-3">404</p>
-      <h1 className="text-lg font-semibold text-[#0F172A] dark:text-white mb-1.5">Page not found</h1>
-      <p className="text-sm text-[#64748B] dark:text-neutral-400 mb-6 max-w-sm">
-        The page at <span className="font-medium">{location.pathname}</span> doesn't exist or may have moved.
-      </p>
-      <a
-        href="/"
-        className="rounded-[10px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
-      >
-        Back to home
-      </a>
+    <div className="relative min-h-screen flex items-center justify-center bg-[#EEF2F7] dark:bg-[#0B0F19] px-6 overflow-hidden">
+      {/* Medical lattice backdrop, fading at the edges like the landing hero */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 med-cross [mask-image:radial-gradient(ellipse_60%_60%_at_50%_45%,black,transparent)]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-[0.12] dark:opacity-[0.1] blur-3xl pointer-events-none"
+        style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
+      />
+      <div className="gradient-border shadow-[0_24px_70px_rgba(15,23,42,0.12),0_8px_24px_rgba(15,23,42,0.06)] w-full max-w-md">
+        <div className="bg-white/90 dark:bg-[#151B2C]/90 backdrop-blur-xl p-10 text-center">
+          <p className="font-display text-6xl font-extrabold gradient-text mb-3">404</p>
+          <h1 className="font-display text-lg font-semibold text-[#0F172A] dark:text-white mb-1.5">
+            Page not found
+          </h1>
+          <p className="text-sm text-[#64748B] dark:text-neutral-400 mb-7 max-w-sm mx-auto leading-relaxed">
+            The page at <span className="font-medium">{location.pathname}</span> doesn't exist or may
+            have moved.
+          </p>
+          <a
+            href="/"
+            className="btn-sheen inline-block rounded-[10px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#1E293B] dark:hover:bg-[#0C8E8D] transition-colors"
+          >
+            Back to home
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

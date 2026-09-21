@@ -46,7 +46,7 @@ function isGeneralAnswer(
 
 
 export function AskPage() {
-  const { startSession, sendMessage, sendImage, sendFollowup } = useApi();
+  const { startSession, sendMessage, sendImage, sendAnswerWithImage, sendFollowup } = useApi();
   const { user } = useAuth0();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -60,6 +60,7 @@ export function AskPage() {
   const [awaitingTextClarification, setAwaitingTextClarification] = useState(false);
   const [awaitingImageClarification, setAwaitingImageClarification] = useState(false);
   const [pendingImageContext, setPendingImageContext] = useState<string | null>(null);
+  const [pendingImageQuality, setPendingImageQuality] = useState<boolean | null>(null);
   const [clarificationRound, setClarificationRound] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -129,6 +130,7 @@ export function AskPage() {
           setTurns((prev) => [...prev, { role: "assistant", kind: "question", content: res.clarifyingQuestion }]);
           setAwaitingImageClarification(true);
           setPendingImageContext(res.imageContext ?? null);
+          setPendingImageQuality(res.imageQualityGood ?? null);
         } else {
           setTurns((prev) => [...prev, { role: "assistant", kind: "result", content: res }]);
           if (user?.sub) logRootSession(user.sub, sessionId);
@@ -136,9 +138,18 @@ export function AskPage() {
       } else if (awaitingImageClarification && pendingImageContext) {
         setTurns((prev) => [...prev, { role: "user", kind: "text", content: submittedText }]);
         const combined = `${pendingImageContext}. ${submittedText}`;
-        const res = await sendMessage(combined, sessionId, true);
+        // hasImage/imageQualityGood ride along so the confidence scorer keeps
+        // the image-quality signal from the original vision pass.
+        const res = await sendAnswerWithImage(
+          combined,
+          sessionId,
+          true,
+          pendingImageQuality === true,
+          true
+        );
         setAwaitingImageClarification(false);
         setPendingImageContext(null);
+        setPendingImageQuality(null);
         if (!isTextClarification(res)) {
           setTurns((prev) => [...prev, { role: "assistant", kind: "result", content: res }]);
           if (user?.sub) logRootSession(user.sub, sessionId);
@@ -213,6 +224,7 @@ export function AskPage() {
     setPendingOriginalText(null);
     setAwaitingImageClarification(false);
     setPendingImageContext(null);
+    setPendingImageQuality(null);
     setClarificationRound(0);
     setText("");
     resetTextareaHeight();

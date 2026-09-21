@@ -3,7 +3,7 @@ import { Navbar } from "./Navbar";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] transition-colors">
+    <div className="min-h-screen bg-[#EEF2F7] dark:bg-[#0B0F19] transition-colors">
       <Navbar />
       <div className="relative">
         <div className="fixed inset-0 pointer-events-none">
@@ -17,7 +17,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             }}
           />
           <div
-            className="absolute -top-32 right-0 w-[500px] h-[500px] rounded-full opacity-[0.05] dark:opacity-[0.07] blur-3xl"
+            className="absolute -top-32 right-0 w-[500px] h-[500px] rounded-full opacity-[0.10] dark:opacity-[0.07] blur-3xl"
             style={{ background: "radial-gradient(circle, #0EA5A4, transparent 70%)" }}
           />
         </div>

@@ -269,9 +269,39 @@ body {
   .animate-float,
   .gradient-border,
   .plus-ring::after,
-  .vitals-line::after {
+  .vitals-line::after,
+  .shimmer-skeleton {
     animation: none;
   }
+}
+
+/* Shimmering skeleton placeholder for loading rows (light + dark) */
+@keyframes skeleton-sweep {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.shimmer-skeleton {
+  background-color: #E9EEF5;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  background-size: 400px 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.dark .shimmer-skeleton {
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
 }
 
 /* Mouse-follow spotlight for cards (vars --spot-x/--spot-y set from LandingPage) */

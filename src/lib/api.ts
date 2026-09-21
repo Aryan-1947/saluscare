@@ -50,18 +50,29 @@ async function callFunction<T>(
  * default orientation handling. Either way pixels land upright on the canvas.
  *
  * Returns the original file untouched if it's already small enough, can't be
- * decoded, or the canvas path is unavailable - upload failures then fall
- * through to existing error handling.
+ * decoded, or the canvas path is unavailable. A hard 6 MB cap is enforced on
+ * the fallback path too - oversize payloads would otherwise overflow the edge
+ * function request body limit; the caller surfaces the thrown error.
  */
+/** Must stay in sync with MAX_IMAGE_BYTES in the backend storageKeys.ts. */
+export const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+
 export async function prepareImageForUpload(
   file: File,
   maxEdge = 1568,
   quality = 0.82
 ): Promise<{ base64: string; mimeType: string }> {
   const SMALL_ENOUGH = 300 * 1024; // bytes - below this, send as-is
+  // Anything the server's allowlist will reject is re-encoded (or rejected)
+  // rather than sent as-is - the file input's accept= is advisory only.
+  const SERVER_SAFE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-  if (file.size <= SMALL_ENOUGH) {
-    return { base64: await fileToBase64(file), mimeType: file.type || "image/jpeg" };
+  if (
+    file.size <= SMALL_ENOUGH &&
+    SERVER_SAFE_TYPES.includes(file.type) &&
+    file.size <= MAX_UPLOAD_BYTES
+  ) {
+    return { base64: await fileToBase64(file), mimeType: file.type };
   }
 
   try {
@@ -83,9 +94,21 @@ export async function prepareImageForUpload(
     if (!base64) throw new Error("canvas encode failed");
 
     return { base64, mimeType: "image/jpeg" };
-  } catch {
-    // Canvas/bitmap path failed - degrade gracefully to the original bytes.
-    return { base64: await fileToBase64(file), mimeType: file.type || "image/jpeg" };
+  } catch (decodeErr) {
+    // Canvas/bitmap path failed - degrade gracefully to the original bytes,
+    // but never send an oversize payload (edge function body limit) or a
+    // format the server allowlist will reject.
+    if (
+      file.size > MAX_UPLOAD_BYTES ||
+      !SERVER_SAFE_TYPES.includes(file.type)
+    ) {
+      const reason =
+        file.size > MAX_UPLOAD_BYTES
+          ? "Image is too large and could not be compressed. Please try a smaller image."
+          : "Unsupported image type. Please upload a JPEG, PNG or WebP image.";
+      throw new Error(reason, { cause: decodeErr }) as Error;
+    }
+    return { base64: await fileToBase64(file), mimeType: file.type };
   }
 }
 
@@ -137,6 +160,18 @@ export const api = {
   ) =>
     callFunction("session-image", token, {
       body: { imageBase64, imageMimeType, text, sessionId },
+    }),
+
+  sessionMessageWithImageContext: (
+    token: string,
+    text: string,
+    sessionId: string,
+    hasImage: boolean,
+    imageQualityGood: boolean,
+    skipClarification?: boolean
+  ) =>
+    callFunction("session-message", token, {
+      body: { text, sessionId, hasImage, imageQualityGood, skipClarification },
     }),
 
   sessionFollowup: (

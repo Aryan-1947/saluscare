@@ -42,6 +42,28 @@ export function useApi() {
     [getAccessTokenSilently]
   );
 
+  const sendAnswerWithImage = useCallback(
+    async (
+      text: string,
+      sessionId: string,
+      hasImage: boolean,
+      imageQualityGood: boolean,
+      skipClarification?: boolean
+    ) => {
+      const token = await getAccessTokenSilently();
+      const result = await api.sessionMessageWithImageContext(
+        token,
+        text,
+        sessionId,
+        hasImage,
+        imageQualityGood,
+        skipClarification
+      );
+      return result as AssessmentResult | { sessionId: string; needsClarification: true; clarifyingQuestion: string };
+    },
+    [getAccessTokenSilently]
+  );
+
   const getHistory = useCallback(
     async (sessionId: string): Promise<HistoryResponse> => {
       const token = await getAccessTokenSilently();
@@ -82,5 +104,14 @@ export function useApi() {
     [getAccessTokenSilently]
   );
 
-  return { startSession, sendMessage, sendImage, sendFollowup, getHistory, getFollowups, getSummaries };
+  return {
+    startSession,
+    sendMessage,
+    sendImage,
+    sendAnswerWithImage,
+    sendFollowup,
+    getHistory,
+    getFollowups,
+    getSummaries,
+  };
 }

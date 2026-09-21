@@ -130,7 +130,7 @@ export function SessionDetailPage() {
   const currentTier = lastResultTurn ? (lastResultTurn.content as AssessmentResult).tier : 1;
 
   return (
-    <div className="relative flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[#F8FAFC] dark:bg-[#0B0F19]">
+    <div className="relative flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[#EEF2F7] dark:bg-[#0B0F19]">
       <EcgMonitor tier={currentTier} />
 
       <div className="relative z-10 flex flex-col flex-1 max-w-4xl w-full mx-auto px-4 md:px-8 py-4 min-h-0">
@@ -141,12 +141,13 @@ export function SessionDetailPage() {
           <ArrowLeft size={15} /> Back to sessions
         </button>
 
-        <div className="flex flex-col flex-1 bg-white/35 dark:bg-[#151B2C]/30 backdrop-blur-xl rounded-[16px] border border-white/30 dark:border-white/[0.06] overflow-hidden min-h-0">
-          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {loading && (
+        {/* Glass card parity with AskPage: solid enough fill, visible border
+            and soft shadow so the card holds its shape in light mode. */}
+        <div className="flex flex-col flex-1 bg-white/60 dark:bg-[#151B2C]/40 backdrop-blur-xl rounded-[16px] border border-[#D8E0EA] dark:border-white/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.07)] overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 min-h-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">                {loading && (
               <div className="flex flex-col gap-3">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-24 rounded-[12px] bg-[#F1F5F9] dark:bg-white/[0.03] animate-pulse" />
+                  <div key={i} className="h-24 rounded-[12px] shimmer-skeleton dark:bg-white/[0.03]" />
                 ))}
               </div>
             )}

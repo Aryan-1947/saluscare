@@ -3,15 +3,34 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 import { Clock, ChevronRight, Inbox, Search, ShieldCheck, Stethoscope, Siren } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { getLoggedSessions } from "@/lib/sessionLog";
 import { cn } from "@/lib/utils";
 import type { SessionSummary } from "@/types/api";
 
-const tierLabel: Record<number, { label: string; color: string }> = {
-  1: { label: "Self Care", color: "text-emerald-600 dark:text-emerald-400" },
-  2: { label: "Specialist Referral", color: "text-amber-600 dark:text-amber-400" },
-  3: { label: "Emergency Care", color: "text-rose-600 dark:text-rose-400" },
+const tierLabel: Record<number, { label: string; color: string; tile: string; stripe: string; icon: LucideIcon }> = {
+  1: {
+    label: "Self Care",
+    color: "text-emerald-600 dark:text-emerald-400",
+    tile: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    stripe: "bg-emerald-400/80",
+    icon: ShieldCheck,
+  },
+  2: {
+    label: "Specialist Referral",
+    color: "text-amber-600 dark:text-amber-400",
+    tile: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    stripe: "bg-amber-400/80",
+    icon: Stethoscope,
+  },
+  3: {
+    label: "Emergency Care",
+    color: "text-rose-600 dark:text-rose-400",
+    tile: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+    stripe: "bg-rose-400/80",
+    icon: Siren,
+  },
 };
 
 const tierFilters = [
@@ -144,14 +163,16 @@ export function SessionsPage() {
       {loading && (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-[12px] bg-[#F1F5F9] dark:bg-white/[0.03] animate-pulse" />
+            <div key={i} className="h-20 rounded-[12px] shimmer-skeleton dark:bg-white/[0.03]" />
           ))}
         </div>
       )}
 
       {!loading && rows.length === 0 && (
         <div className="text-center py-16">
-          <Inbox size={32} className="mx-auto text-[#94A3B8] dark:text-neutral-600 mb-3" />
+          <div className="w-14 h-14 rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.08] shadow-[0_4px_16px_rgba(15,23,42,0.06)] flex items-center justify-center mx-auto mb-3">
+            <Inbox size={22} className="text-[#94A3B8] dark:text-neutral-600" />
+          </div>
           <p className="text-[#64748B] dark:text-neutral-400 mb-4">No assessments yet.</p>
           <button
             onClick={() => navigate("/ask")}
@@ -189,10 +210,19 @@ export function SessionsPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ delay: i * 0.05 }}
+              whileHover={{ y: -2 }}
               onClick={() => navigate(`/sessions/${s.sessionId}`)}
-              className="text-left rounded-[12px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-4 flex items-center justify-between hover:shadow-[0_4px_16px_rgba(15,23,42,0.08)] transition-shadow"
+              className="relative overflow-hidden text-left rounded-[12px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-4 pl-5 flex items-center gap-3.5 hover:border-[#0EA5A4]/40 hover:shadow-[0_4px_16px_rgba(15,23,42,0.08),0_12px_32px_rgba(15,23,42,0.06)] transition-[border-color,box-shadow] duration-200"
             >
-              <div className="min-w-0">
+              {/* Tier accent stripe */}
+              <span aria-hidden="true" className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${config.stripe}`} />
+              <div
+                aria-hidden="true"
+                className={`w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 ${config.tile}`}
+              >
+                <config.icon size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-[#0F172A] dark:text-white line-clamp-1">
                   {s.complaintText}
                 </p>

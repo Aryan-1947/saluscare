@@ -64,6 +64,7 @@ export type ImageClarificationResult = {
   clarifyingQuestion: string;
   imageUrl: string;
   imageContext?: string;
+  imageQualityGood?: boolean;
 };
 
 export type TextClarificationResult = {
