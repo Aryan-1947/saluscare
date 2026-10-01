@@ -1,9 +1,9 @@
 # SalusCare Backend
 
 AI-powered symptom triage backend built on Supabase Edge Functions (Deno) with
-Groq LLMs and Auth0 authentication. Six endpoints power the frontend: session
-lifecycle, text/image triage, follow-up chains, history, and the active
-follow-ups dashboard feed.
+Groq LLMs and Auth0 authentication. Eight endpoints power the frontend: session
+lifecycle, text/image triage, follow-up chains, history, the active follow-ups
+dashboard feed, and doctor-visit summaries.
 
 ## Architecture
 
@@ -15,6 +15,8 @@ supabase/functions/
   session-followup/    -> follow-up lifecycle: general question | symptom update | red flag
   session-history/     -> chat turns for a session (re-signs image URLs on read)
   session-followups/   -> user's open sessions ("Active Follow-ups" dashboard)
+  session-summaries/   -> list of assessments with summaries (history page)
+  session-summary/     -> LLM-written doctor-visit handover note for a session
   _shared/             -> agents, triage engine, discriminators, red flags, CORS, rate limiting, auth
 ```
 
@@ -26,9 +28,11 @@ Request flow for triage (`session-message` / `session-image` / `session-followup
    LLM safety net for paraphrased emergencies (`_shared/redFlagMatcher.ts`).
 4. **Intake agent** - extracts structured symptoms, decides sufficiency, may ask
    one clarifying question.
-5. **Triage engine** - deterministic discriminators set the tier (1 self-care,
+5. **Follow-up classifier** (`session-followup`) - routes each incoming message
+   to the general-question agent or the symptom-update chain.
+6. **Triage engine** - deterministic discriminators set the tier (1 self-care,
    2 specialist, 3 emergency); confidence < 50 escalates one tier.
-6. **Response builders** - knowledge-base lookup with category fallback, then
+7. **Response builders** - knowledge-base lookup with category fallback, then
    explainer/follow-up agents write the closing note (static fallback if the
    LLM returns empty twice).
 
@@ -54,7 +58,7 @@ Required `.env` keys (backend, for the smoke test):
 ## Testing
 
 ```bash
-npm test                      # 94 unit tests (vitest) - no network needed
+npm test                      # 132 unit tests (vitest) - no network needed
 python scripts/smoke_test.py  # 18-check end-to-end test against DEPLOYED functions
 ```
 
@@ -79,6 +83,8 @@ npx supabase functions deploy session-image
 npx supabase functions deploy session-followup
 npx supabase functions deploy session-history
 npx supabase functions deploy session-followups
+npx supabase functions deploy session-summaries
+npx supabase functions deploy session-summary
 
 npx supabase db push               # apply supabase/migrations/*.sql
 ```
@@ -126,3 +132,5 @@ tokens (not Supabase JWTs) are verified in code by `_shared/auth0Verify.ts`.
 | session-start | 30 | 5 min |
 | session-followups | 60 | 5 min |
 | session-history | 120 | 5 min |
+| session-summary | 10 | 5 min |
+| session-summaries | 60 | 5 min |
