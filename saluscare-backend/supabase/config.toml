@@ -1,0 +1,23 @@
+[functions.session-start]
+verify_jwt = false
+
+[functions.session-message]
+verify_jwt = false
+
+[functions.session-image]
+verify_jwt = false
+
+[functions.session-followup]
+verify_jwt = false
+
+[functions.session-history]
+verify_jwt = false
+
+[functions.session-followups]
+verify_jwt = false
+
+[functions.session-summaries]
+verify_jwt = false
+
+[functions.session-summary]
+verify_jwt = false
