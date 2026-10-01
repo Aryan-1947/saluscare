@@ -4,10 +4,12 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App.tsx";
 import { AppAuth0Provider } from "@/lib/auth0-provider";
+import { resolveInitialTheme, applyThemeClass } from "@/stores/themeStore";
 
-const storedTheme = localStorage.getItem("salus-theme");
-const isDark = storedTheme !== "light";
-document.documentElement.classList.toggle("dark", isDark);
+// Apply the theme class before React mounts: an explicit stored choice wins,
+// otherwise the OS preference decides. Doing this pre-paint avoids a
+// wrong-theme flash on first load.
+applyThemeClass(resolveInitialTheme());
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

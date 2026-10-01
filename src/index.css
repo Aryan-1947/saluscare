@@ -2,61 +2,99 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Salus Care - design tokens
+ *
+ * Strict palette: orange (accent only), black/charcoal (text + dark surfaces),
+ * cream (warm backgrounds), white (content surfaces). No gradients, no glass,
+ * no glow. Semantic names so components never hard-code hex values.
+ */
 @theme {
-  --color-navy: #0F172A;
-  --color-navy-secondary: #1E293B;
-  --color-teal: #0EA5A4;
-  --color-emergency: #DC2626;
-  --color-warning: #D97706;
-  --color-success: #059669;
-  --color-bg: #EEF2F7;
-  --color-card: #FFFFFF;
-  --color-text: #0F172A;
-  --color-muted: #64748B;
+  /* Accent - used sparingly for CTAs, active states, highlights */
+  --color-accent: #EA580C; /* orange-600, readable on cream/white */
+  --color-accent-hover: #C2410C; /* orange-700 */
+  --color-accent-soft: #FFF3EA; /* warm tint for active nav / hovers */
+  --color-accent-soft-dark: rgba(234, 88, 12, 0.14);
 
-  --font-sans: 'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  /* Ink - primary text and strong contrast elements */
+  --color-ink: #1A1613; /* near-black with warm undertone */
+  --color-ink-hover: #33291F;
+  --color-ink-secondary: #57534E; /* warm gray for secondary text */
+  --color-ink-muted: #A8A29E; /* stone-400 */
 
-  --radius-card: 12px;
-  --radius-input: 10px;
-  --radius-button: 10px;
+  /* Dark surfaces - deep charcoal, never pure black */
+  --color-surface-dark: #191614; /* page background in dark mode */
+  --color-surface-dark-raised: #211D1A; /* cards, panels, navigation */
+  --color-surface-dark-overlay: #2A2521; /* popovers, modals */
 
-  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow-elevated: 0 4px 16px rgba(15, 23, 42, 0.08), 0 12px 32px rgba(15, 23, 42, 0.08);
+  /* Borders */
+  --color-border-light: #E7E0D8; /* warm hairline for light mode */
+  --color-border-dark: #322D28; /* subtle dark-gray separator */
+
+  /* Tier semantics (kept muted; red/amber are functional, not decorative) */
+  --color-tier-self: #15803D; /* green-700 */
+  --color-tier-specialist: #B45309; /* amber-700 */
+  --color-tier-emergency: #DC2626; /* red-600 */
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Subtle radii - rectangular bias, nothing pill-shaped */
+  --radius-card: 10px;
+  --radius-input: 8px;
+  --radius-button: 8px;
+
+  --shadow-soft: 0 1px 2px rgba(26, 22, 19, 0.05);
+  --shadow-elevated: 0 4px 12px rgba(26, 22, 19, 0.08);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  /* Light mode sits on a soft slate-blue tint, not stark white - cards,
-     glass panels and text all read against it with proper contrast. */
-  background-color: #EEF2F7;
-  color: var(--color-text);
+  /* Light mode: warm cream page, near-black ink */
+  background-color: #FAF7F2;
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .dark body {
-  background-color: #0B0F19;
-  color: #F1F5F9;
+  background-color: var(--color-surface-dark);
+  color: #EDE8E2; /* warm off-white, not pure white */
 }
 
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, #0EA5A4 0%, #06B6B4 50%, #2DD4BF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Smooth, deliberate theme transition - colors fade, layout never jumps */
+body,
+body * {
+  transition-property: background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
 }
 
-/* Display font for headings (Plus Jakarta Sans, loaded in index.html) */
+/* Interactive elements also ease their text/icon color changes */
+button,
+a,
+input,
+textarea {
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Typography helpers */
 .font-display {
-  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display);
 }
 
-/* Section eyebrow micro-label with flanking hairlines */
+/* Eyebrow micro-label - editorial section marker (flanking hairline kept,
+   recolored to the accent, no gradient) */
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -65,228 +103,34 @@ body {
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #0EA5A4;
+  color: var(--color-accent);
 }
 
 .eyebrow::before,
 .eyebrow::after {
-  content: '';
+  content: "";
   height: 1px;
   width: 1.75rem;
-}
-
-.eyebrow::before {
-  background: linear-gradient(to right, transparent, rgba(14, 165, 164, 0.55));
-}
-
-.eyebrow::after {
-  background: linear-gradient(to left, transparent, rgba(14, 165, 164, 0.55));
-}
-
-/* Animated gradient border wrapper - inner child supplies the surface */
-.gradient-border {
-  padding: 1px;
-  border-radius: 16px;
-  background: linear-gradient(
-    120deg,
-    rgba(14, 165, 164, 0.55),
-    rgba(15, 23, 42, 0.14),
-    rgba(6, 182, 212, 0.55),
-    rgba(14, 165, 164, 0.55)
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 6s ease infinite;
-}
-
-.gradient-border > * {
-  border-radius: 15px;
-}
-
-/* Medical plus-sign lattice used as section backdrop on the landing page.
-   An SVG data-URI keeps the plus glyph crisp at any scale. */
-.med-cross {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M26 18h4v8h8v4h-8v8h-4v-8h-8v-4h8z' fill='%230EA5A4' fill-opacity='0.14'/%3E%3C/svg%3E");
-}
-
-.dark .med-cross {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M26 18h4v8h8v4h-8v8h-4v-8h-8v-4h8z' fill='%230EA5A4' fill-opacity='0.08'/%3E%3C/svg%3E");
-}
-
-/* Static faint plus mark for scattering around the hero */
-.plus-mark {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  pointer-events: none;
-  background: rgba(14, 165, 164, 0.28);
-  clip-path: polygon(
-    35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%,
-    65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%
-  );
-}
-
-.dark .plus-mark {
-  background: rgba(14, 165, 164, 0.2);
-}
-
-/* Plus-shaped markers for the hero's lateral accents */
-.plus-ring {
-  position: relative;
-  width: 14px;
-  height: 14px;
-}
-
-.plus-ring::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 4px;
-  background: rgba(14, 165, 164, 0.35);
-  clip-path: polygon(
-    35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%,
-    65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%
-  );
-}
-
-.plus-ring::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 4px;
-  background: rgba(14, 165, 164, 0.5);
-  clip-path: polygon(
-    35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%,
-    65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%
-  );
-  animation: pulse-ring 2.6s ease-out infinite;
-}
-
-/* Slow shimmer traveling along the login card's trust divider */
-@keyframes vitals-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
-}
-
-.vitals-line {
-  position: relative;
-  overflow: hidden;
-  height: 1px;
-  border-radius: 1px;
-  background: rgba(14, 165, 164, 0.18);
-}
-
-.vitals-line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 1px;
-  width: 25%;
-  background: linear-gradient(90deg, transparent, rgba(14, 165, 164, 0.8), transparent);
-  animation: vitals-sweep 4s ease-in-out infinite;
-}
-
-/* Light sheen sweeping across primary buttons on hover */
-.btn-sheen {
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-sheen::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -80%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.6s ease;
-  pointer-events: none;
-}
-
-.btn-sheen:hover::after {
-  left: 130%;
-}
-
-/* Branded text selection */
-::selection {
-  background: rgba(14, 165, 164, 0.28);
-}
-
-/* Glass card utility */
-.glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .glass-card {
-  background: rgba(21, 27, 44, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* Animated gradient background */
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
-}
-
-/* Subtle float animation */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-/* Pulse ring for active indicators */
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(2); opacity: 0; }
-}
-
-.pulse-ring::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  border: 2px solid currentColor;
-  animation: pulse-ring 2s ease-out infinite;
-}
-
-/* Infinite CSS loops must stop for reduced-motion users */
-@media (prefers-reduced-motion: reduce) {
-  .animate-gradient,
-  .animate-float,
-  .gradient-border,
-  .plus-ring::after,
-  .vitals-line::after,
-  .shimmer-skeleton {
-    animation: none;
-  }
+  background: currentColor;
+  opacity: 0.4;
 }
 
 /* Shimmering skeleton placeholder for loading rows (light + dark) */
 @keyframes skeleton-sweep {
-  0% { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
 }
 
 .shimmer-skeleton {
-  background-color: #E9EEF5;
+  background-color: #EFE9E1;
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0.7) 50%,
     transparent 100%
   );
   background-size: 400px 100%;
@@ -304,27 +148,82 @@ body {
   );
 }
 
-/* Mouse-follow spotlight for cards (vars --spot-x/--spot-y set from LandingPage) */
-.spotlight-card {
-  position: relative;
+/* Typing-indicator dots and similar micro-animations */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
 
-.spotlight-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    320px circle at var(--spot-x, 50%) var(--spot-y, 50%),
-    rgba(14, 165, 164, 0.1),
-    transparent 65%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
+/* Hero badge "live" dot - a gentle blink with a fading ring */
+@keyframes blink-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.45);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px rgba(234, 88, 12, 0);
+  }
 }
 
-.spotlight-card:hover::before {
-  opacity: 1;
+.blink-dot {
+  animation: blink-dot 1.6s ease-in-out infinite;
 }
 
+/* Voice-dictation equalizer bars (ListeningIndicator) */
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq-bounce 0.9s ease-in-out infinite;
+}
+
+/* Infinite loops must stop for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-skeleton,
+  .eq-bar,
+  .blink-dot {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body,
+  body * {
+    transition-duration: 0ms;
+  }
+}
+
+/* Landing-page backdrop: a faint medical plus-sign lattice. An SVG data-URI
+   keeps the glyph crisp at any scale; the orange is heavily diluted so it
+   reads as texture, not decoration. 40px grid = denser field than before. */
+.lattice-fade {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M19 11h2v8h8v2h-8v8h-2v-8h-8v-2h8z' fill='%23EA580C' fill-opacity='0.10'/%3E%3C/svg%3E");
+}
+
+.dark .lattice-fade {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M19 11h2v8h8v2h-8v8h-2v-8h-8v-2h8z' fill='%23EA580C' fill-opacity='0.07'/%3E%3C/svg%3E");
+}
+
+/* Branded text selection - warm, quiet */
+::selection {
+  background: rgba(234, 88, 12, 0.22);
+}

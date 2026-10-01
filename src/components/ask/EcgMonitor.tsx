@@ -7,9 +7,9 @@ const SPEED_PX_PER_SEC = 150;
 const POINT_SPACING = 2;
 
 const TIER_COLORS: Record<number, string> = {
-  1: "#059669", // self-care → green
-  2: "#D97706", // specialist referral → amber
-  3: "#DC2626", // emergency → red
+  1: "#15803D", // self-care -> green
+  2: "#B45309", // specialist referral -> amber
+  3: "#DC2626", // emergency -> red
 };
 
 // QRS-complex style waveform
@@ -50,6 +50,12 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * Math.min(Math.max(t, 0), 1);
 }
 
+/**
+ * Fixed ECG trace across the page background, behind the chat card. Purely
+ * indicative: the color mirrors the current triage tier (green/amber/red) so
+ * the severity state is readable at a glance while the conversation continues.
+ * The chat card is slightly translucent, so the trace glows through it.
+ */
 export function EcgMonitor({ tier = 1 }: { tier?: number }) {
   const pathRef = useRef<SVGPathElement>(null);
   const dotRef = useRef<SVGCircleElement>(null);
@@ -120,7 +126,7 @@ export function EcgMonitor({ tier = 1 }: { tier?: number }) {
       >
         <defs>
           <filter id="ecgGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feGaussianBlur stdDeviation="4" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />

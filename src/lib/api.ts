@@ -1,4 +1,4 @@
-import type { FollowupsResponse, HistoryResponse, SummariesResponse } from "@/types/api";
+import type { DoctorSummaryResponse, FollowupsResponse, HistoryResponse, SummariesResponse } from "@/types/api";
 
 const BASE_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 
@@ -198,5 +198,10 @@ export const api = {
     callFunction<SummariesResponse>("session-summaries", token, {
       method: "GET",
       query: sessionIds.length ? { ids: sessionIds.join(",") } : undefined,
+    }),
+
+  sessionDoctorSummary: (token: string, sessionId: string) =>
+    callFunction<DoctorSummaryResponse>("session-summary", token, {
+      body: { sessionId },
     }),
 };

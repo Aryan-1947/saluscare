@@ -31,18 +31,18 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
-          <p className="text-5xl font-bold gradient-text mb-3">{isChunkError ? "Update" : "Oops"}</p>
-          <h1 className="text-lg font-semibold text-[#0F172A] dark:text-white mb-1.5">
+          <p className="text-5xl font-bold font-display text-[#EA580C] mb-3">{isChunkError ? "Update" : "Oops"}</p>
+          <h1 className="text-lg font-semibold text-[#1A1613] dark:text-[#EDE8E2] mb-1.5">
             {isChunkError ? "A new version is available" : "Something went wrong"}
           </h1>
-          <p className="text-sm text-[#64748B] dark:text-neutral-400 mb-6 max-w-sm">
+          <p className="text-sm text-[#57534E] dark:text-[#A8A29E] mb-6 max-w-sm">
             {isChunkError
               ? "The page was updated while you were away. Reload to get the latest version."
               : "An unexpected error occurred while rendering this page."}
           </p>
           <button
             onClick={() => (isChunkError ? window.location.reload() : this.setState({ error: null }))}
-            className="rounded-[10px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
+            className="rounded-[8px] bg-[#EA580C] hover:bg-[#C2410C] text-white px-5 py-2.5 text-sm font-semibold transition-colors"
           >
             {isChunkError ? "Reload" : "Try again"}
           </button>

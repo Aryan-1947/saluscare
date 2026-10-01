@@ -114,3 +114,17 @@ export type HistoryResponse = {
   groupId: string;
   turns: HistoryTurn[];
 };
+
+export type DoctorSummaryResponse = {
+  sessionId: string;
+  generatedAt: string;
+  /** Markdown-formatted clinical handover note written from the transcript. */
+  narrative: string;
+  meta: {
+    turnCount: number;
+    assessmentCount: number;
+    finalTier: number;
+    startedAt: string;
+    lastActivityAt: string;
+  };
+};

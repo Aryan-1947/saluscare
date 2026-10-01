@@ -131,9 +131,15 @@ async function main() {
       gradientBorders: document.querySelectorAll(".gradient-border").length,
       eyebrows: document.querySelectorAll(".eyebrow").length,
       displayHeadings: document.querySelectorAll(".font-display").length,
+      auroraGlow: [...document.querySelectorAll("div")].some(
+        (d) =>
+          (d.getAttribute("style") || "").includes("radial-gradient") &&
+          typeof d.className === "string" &&
+          d.className.includes("blur-3xl")
+      ),
     }));
-    record("medical-cross backdrop present", design.medCross);
-    record("hero plus-marker accents", design.plusMarks >= 2, `${design.plusMarks} markers`);
+    record("landing is lattice-free (aurora only)", !design.medCross && design.plusMarks === 0);
+    record("aurora glow layer present", design.auroraGlow);
     record(
       "gradient-border panels",
       design.gradientBorders >= 2,

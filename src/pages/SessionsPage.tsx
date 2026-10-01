@@ -12,32 +12,32 @@ import type { SessionSummary } from "@/types/api";
 const tierLabel: Record<number, { label: string; color: string; tile: string; stripe: string; icon: LucideIcon }> = {
   1: {
     label: "Self Care",
-    color: "text-emerald-600 dark:text-emerald-400",
-    tile: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    stripe: "bg-emerald-400/80",
+    color: "text-[#15803D] dark:text-[#4ADE80]",
+    tile: "bg-[#F0FDF4] dark:bg-[#15803D]/10 text-[#15803D] dark:text-[#4ADE80]",
+    stripe: "bg-[#15803D]/70",
     icon: ShieldCheck,
   },
   2: {
     label: "Specialist Referral",
-    color: "text-amber-600 dark:text-amber-400",
-    tile: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    stripe: "bg-amber-400/80",
+    color: "text-[#B45309] dark:text-[#FBBF24]",
+    tile: "bg-[#FFFBEB] dark:bg-[#B45309]/10 text-[#B45309] dark:text-[#FBBF24]",
+    stripe: "bg-[#B45309]/70",
     icon: Stethoscope,
   },
   3: {
     label: "Emergency Care",
-    color: "text-rose-600 dark:text-rose-400",
-    tile: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    stripe: "bg-rose-400/80",
+    color: "text-[#DC2626] dark:text-[#F87171]",
+    tile: "bg-[#FEF2F2] dark:bg-[#DC2626]/10 text-[#DC2626] dark:text-[#F87171]",
+    stripe: "bg-[#DC2626]/70",
     icon: Siren,
   },
 };
 
 const tierFilters = [
-  { value: "all", label: "All", icon: null, activeClass: "bg-[#0F172A] dark:bg-[#0EA5A4] text-white" },
-  { value: "1", label: "Self Care", icon: ShieldCheck, activeClass: "bg-emerald-600 text-white" },
-  { value: "2", label: "Specialist", icon: Stethoscope, activeClass: "bg-amber-600 text-white" },
-  { value: "3", label: "Emergency", icon: Siren, activeClass: "bg-rose-600 text-white" },
+  { value: "all", label: "All", icon: null, activeClass: "bg-[#1A1613] dark:bg-[#EDE8E2] dark:text-[#1A1613] text-white" },
+  { value: "1", label: "Self Care", icon: ShieldCheck, activeClass: "bg-[#15803D] text-white" },
+  { value: "2", label: "Specialist", icon: Stethoscope, activeClass: "bg-[#B45309] text-white" },
+  { value: "3", label: "Emergency", icon: Siren, activeClass: "bg-[#DC2626] text-white" },
 ] as const;
 
 function timeAgo(iso: string): string {
@@ -125,20 +125,20 @@ export function SessionsPage() {
 
   return (
     <div className="px-4 md:px-8 py-8 md:py-12 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-[#0F172A] dark:text-white mb-1">Session History</h1>
-      <p className="text-sm text-[#64748B] dark:text-neutral-400 mb-6 leading-relaxed">
+      <h1 className="font-display text-2xl font-bold tracking-tight text-[#1A1613] dark:text-[#EDE8E2] mb-1">Session History</h1>
+      <p className="text-sm text-[#57534E] dark:text-[#A8A29E] mb-6 leading-relaxed">
         Review past assessments and continue any of them.
       </p>
 
       {/* Search + tier filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A8A29E]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search assessments..."
-            className="w-full rounded-[10px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] pl-9 pr-3 py-2.5 text-sm text-[#0F172A] dark:text-white placeholder:text-[#94A3B8] dark:placeholder:text-neutral-500 outline-none focus:border-[#0EA5A4]/50 focus:ring-2 focus:ring-[#0EA5A4]/10 transition-all"
+            className="w-full rounded-[8px] bg-white dark:bg-[#26221E] border border-[#E7E0D8] dark:border-[#322D28] pl-9 pr-3 py-2.5 text-sm text-[#1A1613] dark:text-[#EDE8E2] placeholder:text-[#A8A29E] dark:placeholder:text-[#78716C] outline-none focus:border-[#EA580C]/50 focus:ring-2 focus:ring-[#EA580C]/10 transition-colors"
           />
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -147,10 +147,10 @@ export function SessionsPage() {
               key={f.value}
               onClick={() => setTierFilter(f.value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all",
+                "flex items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-xs font-medium transition-colors",
                 tierFilter === f.value
                   ? f.activeClass
-                  : "bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] text-[#64748B] dark:text-neutral-400 hover:border-[#0EA5A4]/40 hover:text-[#0F172A] dark:hover:text-white"
+                  : "bg-white dark:bg-[#26221E] border border-[#E7E0D8] dark:border-[#322D28] text-[#57534E] dark:text-[#A8A29E] hover:border-[#EA580C]/40 hover:text-[#1A1613] dark:hover:text-[#EDE8E2]"
               )}
             >
               {f.icon && <f.icon size={12} />}
@@ -163,20 +163,20 @@ export function SessionsPage() {
       {loading && (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-[12px] shimmer-skeleton dark:bg-white/[0.03]" />
+            <div key={i} className="h-20 rounded-[10px] shimmer-skeleton dark:bg-white/[0.03]" />
           ))}
         </div>
       )}
 
       {!loading && rows.length === 0 && (
         <div className="text-center py-16">
-          <div className="w-14 h-14 rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.08] shadow-[0_4px_16px_rgba(15,23,42,0.06)] flex items-center justify-center mx-auto mb-3">
-            <Inbox size={22} className="text-[#94A3B8] dark:text-neutral-600" />
+          <div className="w-14 h-14 rounded-[10px] bg-white dark:bg-[#26221E] border border-[#E7E0D8] dark:border-[#322D28] flex items-center justify-center mx-auto mb-3">
+            <Inbox size={22} className="text-[#A8A29E] dark:text-[#78716C]" />
           </div>
-          <p className="text-[#64748B] dark:text-neutral-400 mb-4">No assessments yet.</p>
+          <p className="text-[#57534E] dark:text-[#A8A29E] mb-4">No assessments yet.</p>
           <button
             onClick={() => navigate("/ask")}
-            className="rounded-[10px] bg-[#0F172A] dark:bg-[#0EA5A4] text-white px-5 py-2.5 text-sm font-semibold transition-all hover:shadow-md"
+            className="rounded-[8px] bg-[#EA580C] hover:bg-[#C2410C] text-white px-5 py-2.5 text-sm font-semibold transition-colors"
           >
             Start an Assessment
           </button>
@@ -185,14 +185,14 @@ export function SessionsPage() {
 
       {!loading && rows.length > 0 && filteredRows.length === 0 && (
         <div className="text-center py-14">
-          <Search size={28} className="mx-auto text-[#94A3B8] dark:text-neutral-600 mb-3" />
-          <p className="text-sm text-[#64748B] dark:text-neutral-400">No sessions match your search or filter.</p>
+          <Search size={28} className="mx-auto text-[#A8A29E] dark:text-[#78716C] mb-3" />
+          <p className="text-sm text-[#57534E] dark:text-[#A8A29E]">No sessions match your search or filter.</p>
           <button
             onClick={() => {
               setQuery("");
               setTierFilter("all");
             }}
-            className="mt-3 text-xs font-medium text-[#0EA5A4] hover:underline"
+            className="mt-3 text-xs font-medium text-[#EA580C] hover:underline"
           >
             Clear filters
           </button>
@@ -212,7 +212,7 @@ export function SessionsPage() {
               transition={{ delay: i * 0.05 }}
               whileHover={{ y: -2 }}
               onClick={() => navigate(`/sessions/${s.sessionId}`)}
-              className="relative overflow-hidden text-left rounded-[12px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] p-4 pl-5 flex items-center gap-3.5 hover:border-[#0EA5A4]/40 hover:shadow-[0_4px_16px_rgba(15,23,42,0.08),0_12px_32px_rgba(15,23,42,0.06)] transition-[border-color,box-shadow] duration-200"
+              className="relative overflow-hidden text-left rounded-[10px] bg-white dark:bg-[#211D1A] border border-[#E7E0D8] dark:border-[#322D28] p-4 pl-5 flex items-center gap-3.5 hover:border-[#EA580C]/40 hover:shadow-[0_4px_12px_rgba(26,22,19,0.08)] transition-colors duration-200"
             >
               {/* Tier accent stripe */}
               <span aria-hidden="true" className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${config.stripe}`} />
@@ -223,20 +223,20 @@ export function SessionsPage() {
                 <config.icon size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#0F172A] dark:text-white line-clamp-1">
+                <p className="text-sm font-medium text-[#1A1613] dark:text-[#EDE8E2] line-clamp-1">
                   {s.complaintText}
                 </p>
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className={`text-xs font-medium ${config.label ? config.color : ""}`}>
                     {config.label}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-[#64748B] dark:text-neutral-500">
+                  <span className="flex items-center gap-1 text-xs text-[#57534E] dark:text-[#78716C]">
                     <Clock size={11} />
                     {timeAgo(s.lastActivityAt)}
                   </span>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-[#94A3B8] shrink-0" />
+              <ChevronRight size={18} className="text-[#A8A29E] shrink-0" />
             </motion.button>
           );
         })}
@@ -244,7 +244,7 @@ export function SessionsPage() {
       </div>
 
       {rows.length > 0 && (
-        <p className="text-xs text-[#94A3B8] dark:text-neutral-600 text-center mt-6">
+        <p className="text-xs text-[#A8A29E] dark:text-[#78716C] text-center mt-6">
           {filteredRows.length} of {rows.length} assessment{rows.length === 1 ? "" : "s"} shown
         </p>
       )}

@@ -11,33 +11,44 @@ import {
   Clock,
   Plus,
   Info,
+  PhoneCall,
+  MapPin,
 } from "lucide-react";
 import type { AssessmentResult, Tier1Response, Tier2Response, Tier3Response } from "@/types/api";
+
+/**
+ * Emergency actions for Tier 3 cards. `tel:` opens the phone's dialer and the
+ * maps link is a plain Google Maps search - both work with no API keys.
+ * The number is the India national emergency line; adjust per region if the
+ * product is deployed elsewhere.
+ */
+const EMERGENCY_NUMBER = "112";
+const NEARBY_HOSPITALS_URL = "https://www.google.com/maps/search/hospital+emergency+near+me";
 
 const tierConfig = {
   1: {
     label: "Self Care",
     icon: ShieldCheck,
-    accent: "#059669",
-    bg: "bg-emerald-50 dark:bg-emerald-500/10",
-    border: "border-emerald-200 dark:border-emerald-500/20",
-    text: "text-emerald-700 dark:text-emerald-400",
+    accent: "#15803D",
+    bg: "bg-[#F0FDF4] dark:bg-[#15803D]/10",
+    border: "border-[#BBF7D0] dark:border-[#15803D]/25",
+    text: "text-[#15803D] dark:text-[#4ADE80]",
   },
   2: {
     label: "Specialist Referral",
     icon: Stethoscope,
-    accent: "#D97706",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-    border: "border-amber-200 dark:border-amber-500/20",
-    text: "text-amber-700 dark:text-amber-400",
+    accent: "#B45309",
+    bg: "bg-[#FFFBEB] dark:bg-[#B45309]/10",
+    border: "border-[#FDE68A] dark:border-[#B45309]/25",
+    text: "text-[#B45309] dark:text-[#FBBF24]",
   },
   3: {
     label: "Emergency Care",
     icon: Siren,
     accent: "#DC2626",
-    bg: "bg-rose-50 dark:bg-rose-500/10",
-    border: "border-rose-200 dark:border-rose-500/20",
-    text: "text-rose-700 dark:text-rose-400",
+    bg: "bg-[#FEF2F2] dark:bg-[#DC2626]/10",
+    border: "border-[#FECACA] dark:border-[#DC2626]/25",
+    text: "text-[#DC2626] dark:text-[#F87171]",
   },
 } as const;
 
@@ -54,13 +65,13 @@ function InfoList({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <Icon size={15} className="text-[#64748B] dark:text-neutral-400" />
-        <h4 className="text-sm font-semibold text-[#0F172A] dark:text-white">{title}</h4>
+        <Icon size={15} className="text-[#57534E] dark:text-[#A8A29E]" />
+        <h4 className="text-sm font-semibold text-[#1A1613] dark:text-[#EDE8E2]">{title}</h4>
       </div>
       <ul className="space-y-1.5">
         {items.map((item, i) => (
-          <li key={i} className="text-sm text-[#64748B] dark:text-neutral-400 pl-4 relative">
-            <span className="absolute left-0 top-2 w-1 h-1 rounded-full bg-[#94A3B8]" />
+          <li key={i} className="text-sm text-[#57534E] dark:text-[#A8A29E] pl-4 relative">
+            <span className="absolute left-0 top-2 w-1 h-1 rounded-full bg-[#A8A29E]" />
             {item}
           </li>
         ))}
@@ -76,17 +87,17 @@ function FirstAidList({ items }: { items: { text: string; precaution: string | n
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <Plus size={15} className="text-[#D97706]" />
-        <h4 className="text-sm font-semibold text-[#0F172A] dark:text-white">First Aid</h4>
+        <Plus size={15} className="text-[#B45309]" />
+        <h4 className="text-sm font-semibold text-[#1A1613] dark:text-[#EDE8E2]">First Aid</h4>
       </div>
       <div className="flex flex-col gap-2.5">
         {items.map((item, i) => (
-          <div key={i} className="rounded-[8px] bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3">
-            <p className="text-sm text-[#0F172A] dark:text-white">{item.text}</p>
+          <div key={i} className="rounded-[8px] bg-[#F5F0E8] dark:bg-white/[0.04] border border-[#E7E0D8] dark:border-[#322D28] p-3">
+            <p className="text-sm text-[#1A1613] dark:text-[#EDE8E2]">{item.text}</p>
             {item.precaution && (
-              <div className="flex items-start gap-1.5 mt-1.5 pt-1.5 border-t border-amber-200 dark:border-amber-500/20">
-                <Info size={12} className="text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-400">{item.precaution}</p>
+              <div className="flex items-start gap-1.5 mt-1.5 pt-1.5 border-t border-[#E7E0D8] dark:border-[#322D28]">
+                <Info size={12} className="text-[#B45309] mt-0.5 shrink-0" />
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">{item.precaution}</p>
               </div>
             )}
           </div>
@@ -106,7 +117,7 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
 
   if (isUnseededFallback) {
     return (
-      <div className="max-w-[80%] rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] text-[#0F172A] dark:text-white px-4 py-2.5 text-sm leading-relaxed">
+      <div className="max-w-[80%] rounded-[10px] rounded-bl-[4px] bg-white dark:bg-[#211D1A] border border-[#E7E0D8] dark:border-[#322D28] text-[#1A1613] dark:text-[#EDE8E2] px-4 py-2.5 text-sm leading-relaxed">
         {result.explanation}
       </div>
     );
@@ -120,7 +131,7 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-[14px] bg-white dark:bg-[#151B2C] border border-[#E2E8F0] dark:border-white/[0.06] overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_4px_16px_rgba(15,23,42,0.08),0_12px_32px_rgba(15,23,42,0.06)] transition-shadow duration-300"
+      className="max-w-[85%] rounded-[10px] bg-white dark:bg-[#211D1A] border border-[#E7E0D8] dark:border-[#322D28] overflow-hidden shadow-[0_1px_2px_rgba(26,22,19,0.05)] hover:shadow-[0_4px_12px_rgba(26,22,19,0.09)] transition-shadow duration-300"
     >
       {/* Header band */}
       <div className={`${config.bg} ${config.border} border-b px-6 py-4 flex items-center gap-3`}>
@@ -135,7 +146,7 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
             {config.label}
           </p>
           {result.triage && (
-            <p className="text-sm text-[#0F172A] dark:text-white font-medium capitalize">
+            <p className="text-sm text-[#1A1613] dark:text-[#EDE8E2] font-medium capitalize">
               {result.triage.presentingComplaint}
             </p>
           )}
@@ -145,29 +156,53 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
       {/* Body */}
       <div className="px-6 py-5 flex flex-col gap-5">
         {result.tier === 3 && (
-          <p className="text-[#0F172A] dark:text-white leading-relaxed font-medium">
-            {(result.response as Tier3Response).message}
-          </p>
+          <>
+            <p className="text-[#1A1613] dark:text-[#EDE8E2] leading-relaxed font-medium">
+              {(result.response as Tier3Response).message}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <a
+                href={`tel:${EMERGENCY_NUMBER}`}
+                className="flex-1 flex items-center justify-center gap-2 rounded-[8px] bg-[#DC2626] hover:bg-[#B91C1C] text-white px-5 py-3 text-sm font-semibold transition-colors"
+              >
+                <PhoneCall size={16} />
+                Call {EMERGENCY_NUMBER} now
+              </a>
+              <a
+                href={NEARBY_HOSPITALS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 rounded-[8px] border border-[#DC2626]/40 text-[#DC2626] dark:text-[#F87171] px-5 py-3 text-sm font-semibold hover:bg-[#FEF2F2] dark:hover:bg-[#DC2626]/10 transition-colors"
+              >
+                <MapPin size={16} />
+                Nearest hospital
+              </a>
+            </div>
+            <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">
+              The call button opens your phone's dialer; the hospital button opens
+              Google Maps with emergency departments near your location.
+            </p>
+          </>
         )}
 
         {result.tier === 2 && (
           <>
             <div>
-              <h3 className="text-base font-bold text-[#0F172A] dark:text-white mb-1">
+              <h3 className="text-base font-bold text-[#1A1613] dark:text-[#EDE8E2] mb-1">
                 {(result.response as Tier2Response).likelyCondition}
               </h3>
-              <p className="text-sm text-[#64748B] dark:text-neutral-400">
+              <p className="text-sm text-[#57534E] dark:text-[#A8A29E]">
                 {(result.response as Tier2Response).whySpecialistNeeded}
               </p>
             </div>
-            <div className="rounded-[12px] bg-[#F8FAFC] dark:bg-white/[0.03] p-4 border border-[#E2E8F0]/50 dark:border-white/[0.04]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-neutral-500 mb-1">
+            <div className="rounded-[12px] bg-[#F5F0E8] dark:bg-white/[0.04] p-4 border border-[#E7E0D8]/70 dark:border-[#322D28]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#57534E] dark:text-[#A8A29E] mb-1">
                 Recommended Specialist
               </p>
-              <p className="text-sm font-medium text-[#0F172A] dark:text-white">
+              <p className="text-sm font-medium text-[#1A1613] dark:text-[#EDE8E2]">
                 {(result.response as Tier2Response).recommendedSpecialist}
               </p>
-              <p className="text-sm text-[#64748B] dark:text-neutral-400 mt-1">
+              <p className="text-sm text-[#57534E] dark:text-[#A8A29E] mt-1">
                 {(result.response as Tier2Response).specialistReason}
               </p>
             </div>
@@ -182,10 +217,10 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
         {result.tier === 1 && (
           <>
             <div>
-              <h3 className="text-base font-semibold text-[#0F172A] dark:text-white mb-1">
+              <h3 className="text-base font-semibold text-[#1A1613] dark:text-[#EDE8E2] mb-1">
                 {(result.response as Tier1Response).conditionSummary}
               </h3>
-              <p className="text-sm text-[#64748B] dark:text-neutral-400">
+              <p className="text-sm text-[#57534E] dark:text-[#A8A29E]">
                 {(result.response as Tier1Response).likelyCauses}
               </p>
             </div>
@@ -194,13 +229,13 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
             {(result.response as Tier1Response).recoveryPlan?.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock size={15} className="text-[#64748B] dark:text-neutral-400" />
-                  <h4 className="text-sm font-semibold text-[#0F172A] dark:text-white">Recovery Plan</h4>
+                  <Clock size={15} className="text-[#57534E] dark:text-[#A8A29E]" />
+                  <h4 className="text-sm font-semibold text-[#1A1613] dark:text-[#EDE8E2]">Recovery Plan</h4>
                 </div>
                 <ul className="space-y-1.5 list-none">
                   {(result.response as Tier1Response).recoveryPlan.map((step) => (
-                    <li key={step.step} className="text-sm text-[#64748B] dark:text-neutral-400 flex gap-2">
-                      <span className="font-medium text-[#0F172A] dark:text-white">{step.step}.</span>
+                    <li key={step.step} className="text-sm text-[#57534E] dark:text-[#A8A29E] flex gap-2">
+                      <span className="font-medium text-[#1A1613] dark:text-[#EDE8E2]">{step.step}.</span>
                       {step.instruction}
                     </li>
                   ))}
@@ -210,7 +245,7 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
             <InfoList title="Foods to Eat" items={(result.response as Tier1Response).foodsToEat} icon={Utensils} />
             <InfoList title="Foods to Avoid" items={(result.response as Tier1Response).foodsToAvoid} icon={XCircle} />
             <InfoList title="Warning Signs" items={(result.response as Tier1Response).warningSigns} icon={AlertTriangle} />
-            <p className="text-xs text-[#64748B] dark:text-neutral-500 bg-[#F8FAFC] dark:bg-white/[0.03] rounded-[10px] p-3">
+            <p className="text-xs text-[#57534E] dark:text-[#A8A29E] bg-[#F5F0E8] dark:bg-white/[0.04] rounded-[10px] p-3">
               {(result.response as Tier1Response).expectedRecoveryTime && (
                 <>Expected recovery: {(result.response as Tier1Response).expectedRecoveryTime}. </>
               )}
@@ -221,8 +256,8 @@ export function ResultCard({ result }: { result: AssessmentResult }) {
 
         {/* Natural language explanation */}
         {result.explanation && (
-          <div className="border-t border-[#E2E8F0] dark:border-white/[0.06] pt-4">
-            <p className="text-sm text-[#64748B] dark:text-neutral-400 leading-relaxed whitespace-pre-line">
+          <div className="border-t border-[#E7E0D8] dark:border-[#322D28] pt-4">
+            <p className="text-sm text-[#57534E] dark:text-[#A8A29E] leading-relaxed whitespace-pre-line">
               {result.explanation}
             </p>
           </div>
