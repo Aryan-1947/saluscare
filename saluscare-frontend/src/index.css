@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Salus Care - design tokens
+ *
+ * Strict palette: orange (accent only), black/charcoal (text + dark surfaces),
+ * cream (warm backgrounds), white (content surfaces). No gradients, no glass,
+ * no glow. Semantic names so components never hard-code hex values.
+ */
+@theme {
+  /* Accent - used sparingly for CTAs, active states, highlights */
+  --color-accent: #EA580C; /* orange-600, readable on cream/white */
+  --color-accent-hover: #C2410C; /* orange-700 */
+  --color-accent-soft: #FFF3EA; /* warm tint for active nav / hovers */
+  --color-accent-soft-dark: rgba(234, 88, 12, 0.14);
+
+  /* Ink - primary text and strong contrast elements */
+  --color-ink: #1A1613; /* near-black with warm undertone */
+  --color-ink-hover: #33291F;
+  --color-ink-secondary: #57534E; /* warm gray for secondary text */
+  --color-ink-muted: #A8A29E; /* stone-400 */
+
+  /* Dark surfaces - deep charcoal, never pure black */
+  --color-surface-dark: #191614; /* page background in dark mode */
+  --color-surface-dark-raised: #211D1A; /* cards, panels, navigation */
+  --color-surface-dark-overlay: #2A2521; /* popovers, modals */
+
+  /* Borders */
+  --color-border-light: #E7E0D8; /* warm hairline for light mode */
+  --color-border-dark: #322D28; /* subtle dark-gray separator */
+
+  /* Tier semantics (kept muted; red/amber are functional, not decorative) */
+  --color-tier-self: #15803D; /* green-700 */
+  --color-tier-specialist: #B45309; /* amber-700 */
+  --color-tier-emergency: #DC2626; /* red-600 */
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Subtle radii - rectangular bias, nothing pill-shaped */
+  --radius-card: 10px;
+  --radius-input: 8px;
+  --radius-button: 8px;
+
+  --shadow-soft: 0 1px 2px rgba(26, 22, 19, 0.05);
+  --shadow-elevated: 0 4px 12px rgba(26, 22, 19, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Light mode: warm cream page, near-black ink */
+  background-color: #FAF7F2;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  background-color: var(--color-surface-dark);
+  color: #EDE8E2; /* warm off-white, not pure white */
+}
+
+/* Smooth, deliberate theme transition - colors fade, layout never jumps */
+body,
+body * {
+  transition-property: background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Interactive elements also ease their text/icon color changes */
+button,
+a,
+input,
+textarea {
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Typography helpers */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Eyebrow micro-label - editorial section marker (flanking hairline kept,
+   recolored to the accent, no gradient) */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.eyebrow::before,
+.eyebrow::after {
+  content: "";
+  height: 1px;
+  width: 1.75rem;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* Shimmering skeleton placeholder for loading rows (light + dark) */
+@keyframes skeleton-sweep {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.shimmer-skeleton {
+  background-color: #EFE9E1;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  background-size: 400px 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.dark .shimmer-skeleton {
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+}
+
+/* Typing-indicator dots and similar micro-animations */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Hero badge "live" dot - a gentle blink with a fading ring */
+@keyframes blink-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.45);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 4px rgba(234, 88, 12, 0);
+  }
+}
+
+.blink-dot {
+  animation: blink-dot 1.6s ease-in-out infinite;
+}
+
+/* Voice-dictation equalizer bars (ListeningIndicator) */
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq-bounce 0.9s ease-in-out infinite;
+}
+
+/* Infinite loops must stop for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-skeleton,
+  .eq-bar,
+  .blink-dot {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body,
+  body * {
+    transition-duration: 0ms;
+  }
+}
+
+/* Landing-page backdrop: a faint medical plus-sign lattice. An SVG data-URI
+   keeps the glyph crisp at any scale; the orange is heavily diluted so it
+   reads as texture, not decoration. 40px grid = denser field than before. */
+.lattice-fade {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M19 11h2v8h8v2h-8v8h-2v-8h-8v-2h8z' fill='%23EA580C' fill-opacity='0.10'/%3E%3C/svg%3E");
+}
+
+.dark .lattice-fade {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M19 11h2v8h8v2h-8v8h-2v-8h-8v-2h8z' fill='%23EA580C' fill-opacity='0.07'/%3E%3C/svg%3E");
+}
+
+/* Branded text selection - warm, quiet */
+::selection {
+  background: rgba(234, 88, 12, 0.22);
+}
