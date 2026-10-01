@@ -197,4 +197,4 @@ Full details: [backend README → Security model](./saluscare-backend/README.md#
 ---
 
 Built as a full-stack healthcare AI project. Feedback and PRs welcome — but
-remember: **this is a demo of engineering, not a medical device.** 🩺
+remember: **this is a demo of engineering, not a medical device.** 🩺<!-- Verification update -->
