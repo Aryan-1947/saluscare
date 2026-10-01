@@ -12,6 +12,7 @@ import { checkRedFlags } from "../_shared/redFlagMatcher.ts";
 import { runIntakeAgent, runExplainerAgent, runFollowupAgent, classifyFollowupMessage, runGeneralQuestionAgent } from "../_shared/agents.ts";
 import { runTriageEngine } from "../_shared/triageEngine.ts";
 import { diffSymptomState } from "../_shared/symptomDiff.ts";
+import { buildTriageContext } from "../_shared/triageContext.ts";
 import { buildEmergencyResponse } from "../_shared/responseBuilders.ts";
 import { generateTierResponse } from "../_shared/generativeResponseBuilder.ts";
 import { logChatTurn } from "../_shared/chatLog.ts";
@@ -76,9 +77,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Cap context to the most recent portion to keep the LLM's attention focused, while still preserving enough continuity to avoid losing the original complaint
-    const fullContext = priorSession.context_snapshot ?? priorSession.user_input_text;
-    const priorContext = fullContext.length > 400 ? fullContext.slice(-400) : fullContext;
+    // Window the accumulated context to head (original complaint) + tail
+    // (most recent symptom state) - a bare tail-slice eventually drops the
+    // original complaint on long follow-up chains. Pure helper, unit-tested.
+    const fullContext = String(priorSession.context_snapshot ?? priorSession.user_input_text ?? "");
+    const priorContext = buildTriageContext(fullContext);
     const combinedText = `${priorContext}. Patient update: ${text}`;
 
     // Red-flag check runs on the combined context, before anything else

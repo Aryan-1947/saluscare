@@ -1,12 +1,22 @@
 import Groq from "npm:groq-sdk@1";
 import type { ExtractedSymptoms, Tier1Response, Tier2Response, Tier3Response } from "./types.ts";
 import { withJsonRetry } from "./jsonRetry.ts";
+import { looksLikeGuidanceQuestion } from "./followupClassifier.ts";
 
 const MODELS = {
   intake: "openai/gpt-oss-120b",
   explainer: "openai/gpt-oss-120b",
-  webSearch: "groq/compound-mini",
+  // groq/compound-mini was decommissioned by Groq on 2026-09-21 (404s for every
+  // caller). Its built-in web search now runs as a server-side tool on GPT-OSS
+  // models instead - see BROWSER_SEARCH_TOOLS below.
+  webSearch: "openai/gpt-oss-120b",
 };
+
+// Groq's built-in browser_search tool (executed server-side, Exa-powered) is
+// the supported replacement for the decommissioned compound systems' search.
+// Only GPT-OSS models support it, and it is incompatible with structured
+// outputs (json response_format) - none of the calls below use json mode.
+const BROWSER_SEARCH_TOOLS = [{ type: "browser_search" }] as const;
 
 
 
@@ -121,8 +131,9 @@ export async function runExplainerAgent(
         { role: "user", content: JSON.stringify(data) },
       ],
       temperature: 0.4,
-      max_tokens: needsSearch ? 600 : 400,
+      max_tokens: needsSearch ? 1024 : 400,
       reasoning_effort: "low",
+      ...(needsSearch ? { tools: BROWSER_SEARCH_TOOLS } : {}),
     });
     return completion.choices[0]?.message?.content ?? "";
   };
@@ -222,7 +233,16 @@ const CLASSIFIER_SYSTEM_PROMPT = `You are classifying a patient's follow-up mess
 
 "symptom_update" - the message reports an actual, concrete change in their physical condition: new symptoms, worsening or improvement, a factual update about how their body feels right now. This is ONLY for genuine new physical information that should trigger a fresh reassessment.
 
-"general_question" - everything else: questions, requests for clarification, preferences or declines (e.g. "I don't want to eat that", "I'd rather not take medicine"), acknowledgements or gratitude (e.g. "thank you", "ok got it"), or any conversational message that is not reporting new physical symptom information. When in doubt, prefer "general_question" - it is always safer to answer conversationally than to force an unnecessary re-assessment from an ambiguous message.
+"general_question" - everything else: questions, requests for clarification, preferences or declines (e.g. "I don't want to eat that", "I'd rather not take medicine"), acknowledgements or gratitude (e.g. "thank you", "ok got it"), or any conversational message that is not reporting new physical symptom information. A question about the guidance itself - whether an activity, food, or medicine is allowed or advisable - is ALWAYS "general_question", even when it also contains an acknowledgement like "ok ill follow these steps". When in doubt, prefer "general_question" - it is always safer to answer conversationally than to force an unnecessary re-assessment from an ambiguous message.
+
+Examples (question -> type):
+- "no nothing else only stomach ache and ill scale it 7" -> symptom_update
+- "pain is worse now, spreading to my back" -> symptom_update
+- "ok ill follow these steps but i can really not eat fried foods now ?" -> general_question
+- "can I eat ice cream with this?" -> general_question
+- "should i avoid milk too?" -> general_question
+- "is it ok to hit the gym while this heals?" -> general_question
+- "ok got it thanks" -> general_question
 
 Respond ONLY with valid JSON: { "type": "symptom_update" | "general_question" }`;
 
@@ -230,6 +250,11 @@ export async function classifyFollowupMessage(
   groq: Groq,
   message: string
 ): Promise<"symptom_update" | "general_question"> {
+  // Deterministic guard: clear guidance questions ("can I really not eat
+  // fried foods?") must never trigger a re-assessment, even when the LLM
+  // classifier misreads them as symptom reports (observed in production).
+  if (looksLikeGuidanceQuestion(message)) return "general_question";
+
   const completion = await groq.chat.completions.create({
     model: MODELS.intake,
     messages: [
@@ -273,7 +298,12 @@ export async function runGeneralQuestionAgent(
         { role: "user", content: JSON.stringify({ priorSession, recentExchanges: recentExchanges ?? [], question }) },
       ],
       temperature: 0.3,
-      max_tokens: 350,
+      // Large budget: reasoning tokens AND browser_search tool output both count
+      // against max_tokens on gpt-oss, so the old 350 left nothing for the final
+      // answer when a search ran (empty content). Prompt limits answer length.
+      max_tokens: 1024,
+      reasoning_effort: "low", // recommended with browser_search on reasoning models
+      tools: BROWSER_SEARCH_TOOLS,
     });
     const executedTools = (completion.choices[0]?.message as any)?.executed_tools;
     console.log("General question tools used:", JSON.stringify(executedTools ?? "none"));

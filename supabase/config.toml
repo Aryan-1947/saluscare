@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.session-summaries]
 verify_jwt = false
+
+[functions.session-summary]
+verify_jwt = false
