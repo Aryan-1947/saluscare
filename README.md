@@ -53,8 +53,8 @@ architecture, security model, and deployment guide.
 
 ## Deployment status
 
-- Edge functions: 8/8 deployed on Supabase (`session-start`, `session-message`,
+- **Frontend:** deployed on Vercel (git-connected; every push to `main` auto-deploys
+  `saluscare-frontend/` with the SPA rewrite from `saluscare-frontend/vercel.json`)
+- **Edge functions:** 8/8 deployed on Supabase (`session-start`, `session-message`,
   `session-image`, `session-followup`, `session-history`, `session-followups`,
   `session-summaries`, `session-summary`)
-- Frontend: static build (`npm run build` → `dist/`), deployable to any static
-  host with a SPA rewrite
