@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+dist-ssr/
+
+# logs
+*.log
+
+# env & secrets
+.env
+.env.*
+*.local
+
+# supabase local state
+supabase/.temp/
