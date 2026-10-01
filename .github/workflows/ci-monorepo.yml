@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: saluscare-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: saluscare-frontend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: saluscare-frontend
+
+      - name: Build (typecheck + bundle)
+        run: npm run build
+        working-directory: saluscare-frontend
+
+      - name: Unit tests
+        run: npm test
+        working-directory: saluscare-frontend
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: saluscare-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: saluscare-backend
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: saluscare-backend
+
+      - name: Unit tests
+        run: npm test
+        working-directory: saluscare-backend
