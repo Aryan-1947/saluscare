@@ -135,8 +135,8 @@ export function SessionDetailPage() {
 
   useEffect(() => {
     if (!sessionId) return;
-    // Switching sessions always lands back in the read-only view.
-    setChatMode(false);
+    // (Switching sessions remounts this page via the keyed route in App.tsx,
+    // so local state like chat mode resets itself.)
     getHistory(sessionId)
       .then((history) => {
         // Backend returns { groupId, turns } where each turn already mirrors

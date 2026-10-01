@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Loader2 } from "lucide-react";
@@ -13,6 +13,13 @@ const SessionsPage = lazy(() => import("@/pages/SessionsPage").then((m) => ({ de
 const SessionDetailPage = lazy(() =>
   import("@/pages/SessionDetailPage").then((m) => ({ default: m.SessionDetailPage }))
 );
+
+/** Remounts the detail page per session id, so switching sessions resets
+ * local state (chat mode, turns, attachments) without setState-in-effect. */
+function SessionDetailRoute() {
+  const { sessionId } = useParams();
+  return <SessionDetailPage key={sessionId ?? "none"} />;
+}
 
 function PageLoader() {
   return (
@@ -111,7 +118,7 @@ function App() {
             element={
               <Protected>
                 <LazyPage>
-                  <SessionDetailPage />
+                  <SessionDetailRoute />
                 </LazyPage>
               </Protected>
             }
