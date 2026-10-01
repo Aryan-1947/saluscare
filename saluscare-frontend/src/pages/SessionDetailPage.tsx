@@ -465,22 +465,26 @@ export function SessionDetailPage() {
                   className="hidden"
                   onChange={(e) => e.target.files?.[0] && handleImageSelect(e.target.files[0])}
                 />
-                {speechSupported && (
-                  <button
-                    onClick={toggleSpeech}
-                    disabled={submitting}
-                    aria-label={speechListening ? "Stop dictation" : "Start dictation"}
-                    title={speechListening ? "Stop dictation" : "Dictate your update"}
-                    className={cn(
-                      "p-2 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed",
-                      speechListening
-                        ? "bg-[#EA580C]/10 text-[#EA580C] animate-pulse"
-                        : "text-[#57534E] dark:text-[#A8A29E] hover:text-[#EA580C]"
-                    )}
-                  >
-                    {speechListening ? <MicOff size={18} /> : <Mic size={18} />}
-                  </button>
-                )}
+                <button
+                  onClick={toggleSpeech}
+                  disabled={submitting || !speechSupported}
+                  aria-label={speechListening ? "Stop dictation" : "Start dictation"}
+                  title={
+                    speechListening
+                      ? "Stop dictation"
+                      : speechSupported
+                        ? "Dictate your update"
+                        : "Voice input needs Chrome, Edge or Safari"
+                  }
+                  className={cn(
+                    "p-2 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed",
+                    speechListening
+                      ? "bg-[#EA580C]/10 text-[#EA580C] animate-pulse"
+                      : "text-[#57534E] dark:text-[#A8A29E] hover:text-[#EA580C]"
+                  )}
+                >
+                  {speechListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={submitting}
