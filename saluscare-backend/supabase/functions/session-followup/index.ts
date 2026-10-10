@@ -142,8 +142,13 @@ Deno.serve(async (req: Request) => {
     let effectiveTier = triage.tier;
     const priorTier = priorSession.tier as number;
 
-    if (changeType === "worsened" && priorTier < 3) {
-      effectiveTier = Math.max(triage.tier, Math.min(3, priorTier + 1)) as 1 | 2 | 3;
+    // Worsening from a mere symptom update is uncertainty-driven escalation,
+    // so cap it at tier 2 (specialist) even on repeated worsening - a patient
+    // already routed to the specialist stays routed to the specialist.
+    // Emergency (tier 3) requires a deterministic signal instead: a red-flag
+    // match (checked above) or a tier-3 discriminator on the new symptoms.
+    if (changeType === "worsened") {
+      effectiveTier = Math.max(triage.tier, Math.min(2, priorTier + 1)) as 1 | 2 | 3;
     } else if (changeType === "improved") {
       effectiveTier = Math.min(triage.tier, priorTier) as 1 | 2 | 3;
     } else {

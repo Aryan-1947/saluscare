@@ -45,8 +45,12 @@ export function runTriageEngine(
     ambiguousSymptomLanguage: extracted.severity === "unknown",
   });
 
-  if (confidence < 50) {
-    tier = Math.min(3, tier + 1) as 1 | 2 | 3;
+  // Low confidence means UNCERTAINTY, not emergency. Escalate at most to
+  // tier 2 (specialist) - a real emergency arrives via red-flag prefilter or
+  // a tier-3 discriminator, both deterministic keyword signals. The cap must
+  // never DOWNGRADE a deterministic tier-3 discriminator match.
+  if (confidence < 50 && tier < 3) {
+    tier = Math.min(2, tier + 1) as 1 | 2 | 3;
   }
 
   return {

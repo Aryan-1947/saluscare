@@ -159,6 +159,44 @@ describe("runTriageEngine", () => {
     expect(result.tier).toBe(3);
   });
 
+  it("caps low-confidence escalation at tier 2 - vague replies never become emergency", () => {
+    // No discriminator matches ("tired" is not on any keyword list), severity
+    // unknown adds the ambiguity penalty: 15 < 50. The fallback must stop at
+    // tier 2, not bump the patient to emergency.
+    const result = runTriageEngine(
+      extracted({ rawText: "feeling tired, hard to describe", severity: "unknown", symptoms: [] }),
+      false,
+      false
+    );
+    expect(result.confidence).toBeLessThan(50);
+    expect(result.tier).toBe(2);
+  });
+
+  it("keeps a deterministic tier-3 match at tier 3 despite low confidence", () => {
+    // A tier-3 discriminator matched persistently, but with a blurry photo and
+    // unknown severity confidence lands at 15. The confidence fallback must
+    // NOT downgrade a deterministic emergency signal.
+    const result = runTriageEngine(
+      extracted({ rawText: "spreading rash with fever on my neck", severity: "unknown", symptoms: [] }),
+      true,
+      false
+    );
+    expect(result.confidence).toBeLessThan(50);
+    expect(result.tier).toBe(3);
+  });
+
+  it("sends a vague, mildly worsening symptom report to specialist, not emergency", () => {
+    // The user's bug: rash-based worn words + low confidence + a Heuristic
+    // bump used to skip tier 2 and land in emergency. Now the cap leaves the
+    // patient at tier 2 (specialist) - the intermediate level.
+    const result = runTriageEngine(
+      extracted({ rawText: "rash on my arm seems a bit worse, hard to say how much", severity: "unknown" }),
+      false,
+      false
+    );
+    expect(result.tier).toBe(2); // specialist, NOT emergency
+  });
+
   it("reports the LLM's presenting complaint, not the keyword label", () => {
     const result = runTriageEngine(
       extracted({
